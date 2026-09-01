@@ -223,7 +223,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // ============================================================================
     // 【重要】 Vercelなどで公開する場合は、ご自身のFirebaseの設定に書き換えてください。
@@ -268,7 +268,12 @@
     let gameState = null;
     let isUIInitialized = false;
     let selectedHandIndex = null; 
-    let isHostProcessingReveal = false; 
+    let isHostProcessingReveal = false;
+    let heartbeatTimer = null;
+    let disconnectCheckTimer = null;
+    const HEARTBEAT_MS = 5000;
+    const DISCONNECT_TIMEOUT_MS = 20000;
+    const CPU_STYLES = ['慎重派', '攻撃型', '特殊カード型', '読み合い型']; 
 
     const CARDS = { NUM: ['+1', '+2', '+3'], SPECIAL: ['通知オフ', '未読スルー', '既読スルー', '送信取消', 'ブロック'] };
     const CARD_COLORS = {
@@ -356,7 +361,7 @@
           fieldScore: 0, targetScore: 10, rewardPt: 1, kidokuActivated: false,
           skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
           playerSeatOrder: [0, 1, 2, 3], logs: [],
-          players: [{ id: 0, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: false }]
+          players: [{ id: 0, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: false, cpuStyle: null, lastSeen: Date.now() }]
         };
 
         await setDoc(getRoomRef(roomId), initialGameState);
@@ -389,7 +394,7 @@
           
           let playerExists = data.players.some(p => p.uid === currentUser.uid);
           if (!playerExists) {
-              data.players.push({ id: data.players.length, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: false });
+              data.players.push({ id: data.players.length, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: false, cpuStyle: null, lastSeen: Date.now() });
               await updateDoc(getRoomRef(roomId), { players: data.players });
           }
           currentRoomId = roomId;
@@ -411,8 +416,10 @@
       unsubscribeSnapshot = onSnapshot(getRoomRef(roomId), (docSnap) => {
         if (!docSnap.exists()) return;
         gameState = docSnap.data();
+        startPresenceMonitoring();
         
         if (gameState.status === 'FINISHED') {
+           stopPresenceMonitoring();
            alert('ホストがゲームを終了しました。');
            location.reload();
            return;
@@ -443,6 +450,108 @@
         alert("データ同期中にエラーが発生しました。\n" + err.message);
       });
     }
+
+    // --- Presence / 切断対策 ---
+    function startPresenceMonitoring() {
+      if (!currentUser || !currentRoomId) return;
+      if (!heartbeatTimer) {
+        heartbeatTimer = setInterval(() => updateMyHeartbeat(), HEARTBEAT_MS);
+        updateMyHeartbeat();
+      }
+      if (!disconnectCheckTimer && gameState?.hostId === currentUser.uid) {
+        disconnectCheckTimer = setInterval(() => detectAndReplaceDisconnectedPlayers(), HEARTBEAT_MS);
+      }
+    }
+
+    async function updateMyHeartbeat() {
+      if (!currentUser || !currentRoomId || !gameState) return;
+      const myUid = currentUser.uid;
+      try {
+        await runTransaction(db, async (transaction) => {
+          const ref = getRoomRef(currentRoomId);
+          const snap = await transaction.get(ref);
+          if (!snap.exists()) return;
+          const data = snap.data();
+          const players = Array.isArray(data.players) ? data.players.map(p => ({...p})) : [];
+          const idx = players.findIndex(p => p.uid === myUid && !p.isCpu);
+          if (idx === -1) return;
+          players[idx].lastSeen = Date.now();
+          transaction.update(ref, { players });
+        });
+      } catch (e) {
+        console.warn('heartbeat更新失敗:', e);
+      }
+    }
+
+    async function detectAndReplaceDisconnectedPlayers() {
+      if (!currentUser || !currentRoomId || !gameState || gameState.hostId !== currentUser.uid) return;
+      try {
+        await runTransaction(db, async (transaction) => {
+          const ref = getRoomRef(currentRoomId);
+          const snap = await transaction.get(ref);
+          if (!snap.exists()) return;
+          const data = snap.data();
+          if (!data.players || !Array.isArray(data.players)) return;
+          const now = Date.now();
+          let changed = false;
+          const players = data.players.map((p, idx) => {
+            if (p.isCpu || p.uid === currentUser.uid) return p;
+            const lastSeen = Number(p.lastSeen || 0);
+            if (!lastSeen || now - lastSeen <= DISCONNECT_TIMEOUT_MS) return p;
+
+            changed = true;
+            const oldName = p.name || `プレイヤー${idx + 1}`;
+            const cpuNo = data.players.filter(x => x.isCpu).length + 1;
+            const cpuStyle = p.cpuStyle || CPU_STYLES[(idx - 1 + CPU_STYLES.length) % CPU_STYLES.length];
+            const cpu = {
+              ...p,
+              uid: `cpu_${Math.random().toString(36).substring(2, 10)}`,
+              name: `CPU（${oldName}）`,
+              isCpu: true,
+              cpuStyle,
+              lastSeen: null
+            };
+
+            // 待機中なら即CPU化。ゲーム中のPLOTなら、未提出カードをCPUが選ぶ。
+            if (data.status === 'PLAYING' && data.phase === 'PLOT' && cpu.plottedCard === null) {
+              cpu.plottedCardTemp = chooseCpuCardPure(cpu, idx, data);
+              cpu.plottedCard = 'FACE_DOWN';
+              if (cpu.plottedCardTemp !== 'PASS') {
+                const chosenIndex = cpu.hand.indexOf(cpu.plottedCardTemp);
+                if (chosenIndex !== -1) cpu.hand.splice(chosenIndex, 1);
+              } else {
+                cpu.passRights = false;
+              }
+            }
+
+            const logs = Array.isArray(data.logs) ? [...data.logs] : [];
+            logs.push(`⚠️ <strong>${oldName}</strong> が切断したため、<strong class="text-amber-300">${cpu.name}</strong> に交代しました。`);
+            cpu._disconnectLog = logs[logs.length - 1];
+            return cpu;
+          });
+
+          if (!changed) return;
+
+          const logs = Array.isArray(data.logs) ? [...data.logs] : [];
+          players.forEach(p => {
+            if (p._disconnectLog) { logs.push(p._disconnectLog); delete p._disconnectLog; }
+          });
+          transaction.update(ref, { players, logs });
+        });
+      } catch (e) {
+        console.warn('切断チェック失敗:', e);
+      }
+    }
+
+    function stopPresenceMonitoring() {
+      if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+      if (disconnectCheckTimer) { clearInterval(disconnectCheckTimer); disconnectCheckTimer = null; }
+    }
+
+    window.addEventListener('beforeunload', () => {
+      // beforeunload内のFirestore書き込みは保証されないため、判定はheartbeatのタイムアウトで行います。
+      stopPresenceMonitoring();
+    });
 
     // --- Waiting Room ---
     function updateWaitingRoomUI() {
@@ -525,37 +634,102 @@
 
     // --- CPU Logic ---
     function chooseCpuCard(cpu, cpuIdx) {
-      if (cpu.passRights && Math.random() < 0.35) {
-          cpu.passRights = false; return 'PASS';
+      const chosen = chooseCpuCardPure(cpu, cpuIdx, gameState);
+      // 手札から選んだカードを消費。PASSも同様に扱う。
+      if (chosen === 'PASS') {
+        cpu.passRights = false;
+        return chosen;
       }
-      const step = (cpuIdx - gameState.oyaIndex + 4) % 4;
-      const neededScore = gameState.targetScore - gameState.fieldScore;
+      const idx = cpu.hand.indexOf(chosen);
+      if (idx !== -1) cpu.hand.splice(idx, 1);
+      return chosen;
+    }
 
-      if (neededScore >= 1 && neededScore <= 3) {
-        const targetStr = `+${neededScore}`;
-        const winIdx = cpu.hand.findIndex(c => c === targetStr);
-        if (winIdx !== -1) return cpu.hand.splice(winIdx, 1)[0];
+    function chooseCpuCardPure(cpu, cpuIdx, state) {
+      const hand = Array.isArray(cpu.hand) ? cpu.hand : [];
+      if (!hand.length) return 'PASS';
+
+      const step = (cpuIdx - state.oyaIndex + 4) % 4;
+      const needed = state.targetScore - state.fieldScore;
+      const style = cpu.cpuStyle || CPU_STYLES[cpuIdx % CPU_STYLES.length];
+
+      // パスは「今出しても得をしない」場面を中心に使用。
+      if (cpu.passRights) {
+        const shouldPass = style === '慎重派'
+          ? (state.fieldScore >= state.targetScore - 1 && Math.random() < 0.75)
+          : style === '読み合い型'
+            ? (state.fieldScore >= state.targetScore - 2 && Math.random() < 0.55)
+            : Math.random() < 0.18;
+        if (shouldPass) return 'PASS';
       }
 
-      const validIndices = [];
-      cpu.hand.forEach((card, idx) => {
-        let isUseless = false;
-        if (card === '既読スルー' && cpuIdx !== gameState.oyaIndex) isUseless = true;
-        if (card === '送信取消' && step === 0) isUseless = true;
-        if ((card === '通知オフ' || card === 'ブロック') && step === 3) isUseless = true;
-        if (!isUseless) validIndices.push(idx);
-      });
-
-      const pool = validIndices.length > 0 ? validIndices : cpu.hand.map((_, i) => i);
-      const safeIndices = pool.filter(idx => {
-        const card = cpu.hand[idx];
-        if (['+1', '+2', '+3'].includes(card)) return (gameState.fieldScore + parseInt(card)) <= gameState.targetScore;
+      const candidates = hand.map((card, idx) => ({ card, idx })).filter(({card}) => {
+        if (card === '既読スルー' && cpuIdx !== state.oyaIndex) return false;
+        if (card === '送信取消' && (step === 0 || state.lastNumericValue <= 0)) return false;
+        if ((card === '通知オフ' || card === 'ブロック') && step === 3) return false;
         return true;
       });
+      const pool = candidates.length ? candidates : hand.map((card, idx) => ({card, idx}));
 
-      const finalPool = safeIndices.length > 0 ? safeIndices : pool;
-      const chosenIdx = finalPool[Math.floor(Math.random() * finalPool.length)];
-      return cpu.hand.splice(chosenIdx, 1)[0];
+      function scoreCandidate(card) {
+        let score = 0;
+        const numeric = card.startsWith('+') ? parseInt(card, 10) : 0;
+        const next = state.fieldScore + numeric;
+
+        // まずは「ピッタリ」を最優先。
+        if (numeric > 0 && next === state.targetScore) score += 100;
+        if (numeric > 0 && next > state.targetScore) score -= 90;
+        if (numeric > 0 && next < state.targetScore) {
+          const remain = state.targetScore - next;
+          score += Math.max(0, 28 - remain * 4);
+        }
+
+        if (card === 'PASS') score += 5;
+        if (card === '未読スルー') {
+          score += style === '慎重派' ? 18 : 10;
+          if (needed <= 2) score += 6;
+        }
+        if (card === '既読スルー') {
+          score += cpuIdx === state.oyaIndex ? 45 : -100;
+          if (state.fieldScore >= 7) score += 25;
+        }
+        if (card === '通知オフ') {
+          score += step < 3 ? 18 : -40;
+          if (state.fieldScore >= state.targetScore - 3) score += 15;
+          if (style === '特殊カード型') score += 18;
+        }
+        if (card === 'ブロック') {
+          score += step < 3 ? 16 : -35;
+          if (state.fieldScore >= state.targetScore - 2) score += 18;
+          if (style === '攻撃型') score += 15;
+        }
+        if (card === '送信取消') {
+          score += step > 0 && state.lastNumericValue > 0 ? 24 : -60;
+          if (style === '慎重派') score += 12;
+          if (state.fieldScore >= state.targetScore - 2) score += 20;
+        }
+
+        // 終盤は低い数字を温存し、高い数字を使う判断を強化。
+        if (numeric > 0) {
+          if (needed === 1 && numeric === 1) score += 35;
+          if (needed === 2 && numeric === 2) score += 32;
+          if (needed === 3 && numeric === 3) score += 30;
+          if (style === '攻撃型') score += numeric * 3;
+          if (style === '慎重派') score -= numeric * 1.5;
+        }
+
+        // 特殊カード型は特殊カードを温存しすぎない。
+        if (style === '特殊カード型' && !card.startsWith('+')) score += 10;
+        if (style === '読み合い型' && (card === '通知オフ' || card === 'ブロック' || card === '送信取消')) score += 8;
+
+        // ランダム性は小さく残し、毎回完全に同じ手にならないようにする。
+        score += Math.random() * 5;
+        return score;
+      }
+
+      const ranked = pool.map(item => ({ ...item, score: scoreCandidate(item.card) }));
+      ranked.sort((a,b) => b.score - a.score);
+      return ranked[0].card;
     }
 
     // --- Game UI Setup & Update ---
@@ -617,7 +791,7 @@
       // プレイヤー情報とカードアニメーション
       gameState.players.forEach(p => {
         const pIdx = p.id;
-        document.getElementById(`player-name-${pIdx}`).innerText = p.name;
+        document.getElementById(`player-name-${pIdx}`).innerText = p.isCpu && p.cpuStyle ? `🤖 ${p.name}` : p.name;
         document.getElementById(`player-score-${pIdx}`).innerText = p.score;
         
         const oyaIcon = document.getElementById(`player-oya-${pIdx}`);
