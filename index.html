@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット (オンライン対戦版)</title>
+  <title>既読スルー・プロット (オンライン対戦版 v1.5.0)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -45,14 +45,16 @@
           既読スルー <span class="ml-2 text-[10px] bg-rose-500 px-2 py-0.5 rounded-full uppercase tracking-wider font-black">Online</span>
         </h1>
       </div>
-      <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
-        ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / 4
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.5.0</span>
+        <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
+          ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / 4
+        </div>
       </div>
     </header>
 
     <!-- 1. ロビー画面 -->
     <div id="screen-lobby" class="flex-1 flex flex-col justify-center p-6 space-y-8 bg-slate-50 relative">
-      <!-- データベース未接続時の警告表示エリア -->
       <div id="db-warning" class="absolute top-4 left-4 right-4 bg-rose-100 border border-rose-300 text-rose-700 p-3 rounded-xl text-xs font-bold hidden shadow-sm">
         <i class="fa-solid fa-triangle-exclamation mr-1"></i> データベース(Firebase)の設定が見つかりません。コード内の <code>firebaseConfig</code> を設定してください。
       </div>
@@ -61,26 +63,30 @@
         <i class="fa-solid fa-earth-americas text-4xl text-indigo-300 mb-2"></i>
         <h2 class="text-2xl font-black text-indigo-700">オンライン対戦</h2>
         <p class="text-xs text-slate-500 mt-1 font-bold">友達とルームIDを共有して遊ぼう！</p>
+        <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
+          <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
+          <span class="text-xs text-indigo-600 font-black">1.5.0</span>
+        </div>
       </div>
 
       <div class="space-y-2">
         <label class="text-xs font-bold text-slate-500 ml-1">あなたの名前</label>
         <input type="text" id="player-name" placeholder="ゲストプレイヤー" value="プレイヤー" class="w-full p-4 border-2 border-indigo-100 rounded-2xl font-extrabold text-slate-700 focus:border-indigo-400 focus:outline-none transition shadow-sm text-center">
       </div>
-      
+
       <div class="space-y-3 pt-2">
         <button id="btn-create-room" disabled class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all text-lg disabled:opacity-50 flex items-center justify-center">
           <span id="text-create-room">部屋を作る</span>
           <i id="spinner-create-room" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
         </button>
       </div>
-      
+
       <div class="relative flex py-2 items-center">
         <div class="flex-grow border-t border-slate-200"></div>
         <span class="flex-shrink-0 mx-4 text-slate-400 text-xs font-bold">または</span>
         <div class="flex-grow border-t border-slate-200"></div>
       </div>
-      
+
       <div class="space-y-3">
         <input type="text" id="room-id-input" placeholder="ルームID (5桁)" maxlength="5" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-black tracking-widest text-2xl text-center text-slate-700 focus:border-emerald-400 focus:outline-none transition shadow-sm">
         <button id="btn-join-room" disabled class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-95 transition-all text-lg disabled:opacity-50 flex items-center justify-center">
@@ -92,35 +98,48 @@
 
     <!-- 2. 待機室画面 -->
     <div id="screen-waiting" class="flex-1 flex flex-col p-6 hidden bg-slate-50">
-      <div class="text-center mb-6">
-        <h2 class="text-lg font-extrabold text-indigo-700 mb-1">待機室</h2>
+      <div class="text-center mb-5">
+        <div class="flex items-center justify-center gap-2 mb-1">
+          <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.5.0</span>
+        </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
           <div id="display-room-id" class="font-black text-4xl tracking-widest text-slate-800">-----</div>
         </div>
       </div>
-      
+
       <div class="flex-1">
-        <h3 class="text-xs font-bold text-slate-500 mb-2 ml-1"><i class="fa-solid fa-users mr-1"></i> 参加プレイヤー (<span id="waiting-count">1</span>/4)</h3>
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" id="waiting-players-list">
-          <!-- 参加者リストがここに表示 -->
+        <div class="flex justify-between items-center mb-2 ml-1">
+          <h3 class="text-xs font-bold text-slate-500"><i class="fa-solid fa-users mr-1"></i>参加プレイヤー</h3>
+          <span class="text-xs font-black text-indigo-600"><span id="waiting-count">1</span> / <span id="waiting-max-count">4</span>人</span>
         </div>
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" id="waiting-players-list"></div>
       </div>
-      
-      <div class="mt-6 space-y-3" id="host-controls">
-        <button id="btn-add-cpu" class="w-full py-3.5 bg-amber-500 text-white rounded-2xl font-bold shadow-md hover:bg-amber-600 active:scale-95 transition flex justify-center items-center disabled:opacity-50">
-          <i class="fa-solid fa-robot mr-2"></i> 足りない枠をCPUで埋める
-          <i id="spinner-add-cpu" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
-        </button>
+
+      <div class="mt-5 space-y-3" id="host-controls">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <label for="player-count-select" class="text-sm font-black text-slate-700"><i class="fa-solid fa-sliders mr-1 text-indigo-500"></i>対戦人数</label>
+            <span id="target-score-preview" class="text-xs font-black text-emerald-600">目標 10pt</span>
+          </div>
+          <select id="player-count-select" class="w-full p-3 border-2 border-indigo-100 rounded-xl font-black text-slate-700 bg-white focus:border-indigo-400 focus:outline-none">
+            <option value="2">2人</option>
+            <option value="3">3人</option>
+            <option value="4" selected>4人</option>
+          </select>
+          <p class="text-[10px] text-slate-400 font-bold mt-2 leading-relaxed">人数が多いほど目標点を高くします。4人戦の10ptを基準に、2人=5pt・3人=8pt・4人=10ptです。</p>
+        </div>
+
         <button id="btn-start-game" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition text-lg disabled:opacity-50 flex justify-center items-center">
           <span id="text-start-game">ゲームを開始する</span>
           <i id="spinner-start-game" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
         </button>
       </div>
-      
+
       <div id="guest-waiting-msg" class="hidden mt-6 bg-slate-100 rounded-xl p-4 text-center border border-slate-200">
         <div class="animate-spin inline-block w-6 h-6 border-[3px] border-indigo-200 border-t-indigo-600 rounded-full mb-2"></div>
-        <p class="text-sm font-bold text-slate-500">ホストがゲームを開始するのを<br>待っています...</p>
+        <p class="text-sm font-bold text-slate-500">ホストが対戦人数を決めて<br>ゲームを開始するのを待っています...</p>
       </div>
     </div>
 
@@ -130,7 +149,7 @@
       <div class="bg-slate-900 rounded-2xl p-4 text-white shadow-inner relative overflow-hidden">
         <div class="flex justify-between items-end mb-2">
           <div>
-            <span class="text-xs text-slate-400 font-bold block mb-0.5">現在の場の合計</span>
+            <span class="text-xs text-slate-400 font-bold block mb-0.5">現在の場の合計 <span id="match-player-count" class="ml-1 text-indigo-300"></span></span>
             <div class="flex items-baseline space-x-1">
               <span id="field-score" class="text-4xl font-extrabold text-cyan-400 tracking-tight">0</span>
               <span class="text-slate-400 text-sm font-bold">/ <span id="target-score">10</span> pt</span>
@@ -149,7 +168,7 @@
         </div>
         <div id="kidoku-status" class="mt-2 text-center hidden">
           <span class="bg-rose-500/20 text-rose-300 text-[11px] px-2 py-0.5 rounded-md border border-rose-500/30 font-bold animate-pulse">
-            🔥 既読スルー発動中！ (目標: 20pt / 報酬: 2pt)
+            🔥 既読スルー発動中！ (延長目標: <span id="kidoku-target-score">20</span>pt / 報酬: 2pt)
           </span>
         </div>
       </div>
@@ -273,7 +292,50 @@
     let disconnectCheckTimer = null;
     const HEARTBEAT_MS = 5000;
     const DISCONNECT_TIMEOUT_MS = 20000;
-    const CPU_STYLES = ['慎重派', '攻撃型', '特殊カード型', '読み合い型']; 
+    const GAME_VERSION = '1.5.0';
+    const PLAYER_TARGETS = { 2: 5, 3: 8, 4: 10 };
+    let hostWatchTimer = null;
+
+    function getBaseTargetScore(playerCount) {
+      return PLAYER_TARGETS[playerCount] || 10;
+    }
+
+    function getActivePlayers(state) {
+      return (state.players || []).filter(p => !p.disconnected);
+    }
+
+    function getTurnOrder(state) {
+      const order = [];
+      const count = state.players.length;
+      if (!count) return order;
+      for (let i = 0; i < count; i++) {
+        const idx = (state.oyaIndex + i) % count;
+        if (!state.players[idx].disconnected) order.push(idx);
+      }
+      return order;
+    }
+
+    function getNextActivePlayerIndex(state, currentIndex) {
+      const count = state.players.length;
+      for (let offset = 1; offset <= count; offset++) {
+        const idx = (currentIndex + offset) % count;
+        if (!state.players[idx].disconnected) return idx;
+      }
+      return currentIndex;
+    }
+
+    function normalizePlayers(players) {
+      return players.map((p, idx) => ({ ...p, id: idx }));
+    }
+
+    function updatePlayerCountPreview() {
+      const select = document.getElementById('player-count-select');
+      const preview = document.getElementById('target-score-preview');
+      if (!select || !preview) return;
+      const n = Number(select.value);
+      preview.innerText = `目標 ${getBaseTargetScore(n)}pt`;
+    }
+    
 
     const CARDS = { NUM: ['+1', '+2', '+3'], SPECIAL: ['通知オフ', '未読スルー', '既読スルー', '送信取消', 'ブロック'] };
     const CARD_COLORS = {
@@ -281,6 +343,8 @@
       '通知オフ': 'bg-amber-50 text-amber-700 border-amber-300', '未読スルー': 'bg-emerald-50 text-emerald-700 border-emerald-300',
       '既読スルー': 'bg-rose-50 text-rose-700 border-rose-300', '送信取消': 'bg-purple-50 text-purple-700 border-purple-300', 'ブロック': 'bg-slate-100 text-slate-700 border-slate-300'
     };
+
+    updatePlayerCountPreview();
 
     // --- Auth Setup ---
     async function initAuth() {
@@ -358,10 +422,10 @@
         
         const initialGameState = {
           roomId, hostId: currentUser.uid, status: 'WAITING', round: 1, oyaIndex: 0,
-          fieldScore: 0, targetScore: 10, rewardPt: 1, kidokuActivated: false,
+          playerCount: 4, baseTargetScore: 10, fieldScore: 0, targetScore: 10, rewardPt: 1, kidokuActivated: false,
           skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
-          playerSeatOrder: [0, 1, 2, 3], logs: [],
-          players: [{ id: 0, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: false, cpuStyle: null, lastSeen: Date.now() }]
+          logs: [],
+          players: [{ id: 0, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, lastSeen: Date.now(), disconnected: false }]
         };
 
         await setDoc(getRoomRef(roomId), initialGameState);
@@ -390,12 +454,16 @@
         if (docSnap.exists()) {
           const data = docSnap.data();
           if (data.status !== 'WAITING') { alert('すでにゲームが開始されています'); return; }
-          if (data.players.length >= 4) { alert('満室です'); return; }
-          
-          let playerExists = data.players.some(p => p.uid === currentUser.uid);
+          const maxPlayers = Number(data.playerCount || 4);
+          if (data.players.length >= maxPlayers) { alert(`この部屋は${maxPlayers}人設定です。満室です。`); return; }
+
+          const playerExists = data.players.some(p => p.uid === currentUser.uid && !p.disconnected);
           if (!playerExists) {
-              data.players.push({ id: data.players.length, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: false, cpuStyle: null, lastSeen: Date.now() });
-              await updateDoc(getRoomRef(roomId), { players: data.players });
+            const nextPlayers = normalizePlayers([
+              ...data.players.filter(p => !p.disconnected),
+              { uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, lastSeen: Date.now(), disconnected: false }
+            ]);
+            await updateDoc(getRoomRef(roomId), { players: nextPlayers });
           }
           currentRoomId = roomId;
           listenRoom(roomId);
@@ -420,7 +488,8 @@
         
         if (gameState.status === 'FINISHED') {
            stopPresenceMonitoring();
-           alert('ホストがゲームを終了しました。');
+           const reason = gameState.endReason ? `\n${gameState.endReason}` : '';
+           alert(`ゲームが終了しました。${reason}`);
            location.reload();
            return;
         }
@@ -431,7 +500,11 @@
         // ホストの自動進行ロジック
         if (gameState.status === 'PLAYING' && gameState.hostId === currentUser.uid) {
            if (gameState.phase === 'PLOT') {
-              const allPlotted = gameState.players.length === 4 && gameState.players.every(p => p.plottedCard === 'FACE_DOWN');
+              const turnOrder = gameState.roundTurnOrder || getTurnOrder(gameState);
+              const allPlotted = turnOrder.length >= 2 && turnOrder.every(idx => {
+                const p = gameState.players[idx];
+                return p?.disconnected || p?.plottedCard === 'FACE_DOWN';
+              });
               if (allPlotted && !isHostProcessingReveal) {
                  isHostProcessingReveal = true;
                  setTimeout(async () => {
@@ -453,13 +526,23 @@
 
     // --- Presence / 切断対策 ---
     function startPresenceMonitoring() {
-      if (!currentUser || !currentRoomId) return;
+      if (!currentUser || !currentRoomId || !gameState) return;
+
       if (!heartbeatTimer) {
         heartbeatTimer = setInterval(() => updateMyHeartbeat(), HEARTBEAT_MS);
         updateMyHeartbeat();
       }
-      if (!disconnectCheckTimer && gameState?.hostId === currentUser.uid) {
-        disconnectCheckTimer = setInterval(() => detectAndReplaceDisconnectedPlayers(), HEARTBEAT_MS);
+
+      if (gameState.hostId === currentUser.uid) {
+        if (hostWatchTimer) { clearInterval(hostWatchTimer); hostWatchTimer = null; }
+        if (!disconnectCheckTimer) {
+          disconnectCheckTimer = setInterval(() => detectDisconnectedPlayers(), HEARTBEAT_MS);
+        }
+      } else {
+        if (disconnectCheckTimer) { clearInterval(disconnectCheckTimer); disconnectCheckTimer = null; }
+        if (!hostWatchTimer) {
+          hostWatchTimer = setInterval(() => detectHostDisconnect(), HEARTBEAT_MS);
+        }
       }
     }
 
@@ -473,7 +556,7 @@
           if (!snap.exists()) return;
           const data = snap.data();
           const players = Array.isArray(data.players) ? data.players.map(p => ({...p})) : [];
-          const idx = players.findIndex(p => p.uid === myUid && !p.isCpu);
+          const idx = players.findIndex(p => p.uid === myUid && !p.disconnected);
           if (idx === -1) return;
           players[idx].lastSeen = Date.now();
           transaction.update(ref, { players });
@@ -483,125 +566,162 @@
       }
     }
 
-    async function detectAndReplaceDisconnectedPlayers() {
+    async function detectDisconnectedPlayers() {
       if (!currentUser || !currentRoomId || !gameState || gameState.hostId !== currentUser.uid) return;
+
       try {
         await runTransaction(db, async (transaction) => {
           const ref = getRoomRef(currentRoomId);
           const snap = await transaction.get(ref);
           if (!snap.exists()) return;
           const data = snap.data();
-          if (!data.players || !Array.isArray(data.players)) return;
+          if (!Array.isArray(data.players)) return;
+
           const now = Date.now();
+
+          // 待機室では切断者を席から外し、新しい参加者が入れるようにする。
+          if (data.status === 'WAITING') {
+            const kept = data.players.filter(p => {
+              if (p.uid === data.hostId) return true;
+              const lastSeen = Number(p.lastSeen || 0);
+              return !p.disconnected && lastSeen && now - lastSeen <= DISCONNECT_TIMEOUT_MS;
+            });
+            if (kept.length !== data.players.length) {
+              transaction.update(ref, { players: normalizePlayers(kept) });
+            }
+            return;
+          }
+
           let changed = false;
-          const players = data.players.map((p, idx) => {
-            if (p.isCpu || p.uid === currentUser.uid) return p;
+          const players = data.players.map((p) => {
+            if (p.uid === data.hostId || p.disconnected) return p;
             const lastSeen = Number(p.lastSeen || 0);
             if (!lastSeen || now - lastSeen <= DISCONNECT_TIMEOUT_MS) return p;
 
             changed = true;
-            const oldName = p.name || `プレイヤー${idx + 1}`;
-            const cpuNo = data.players.filter(x => x.isCpu).length + 1;
-            const cpuStyle = p.cpuStyle || CPU_STYLES[(idx - 1 + CPU_STYLES.length) % CPU_STYLES.length];
-            const cpu = {
-              ...p,
-              uid: `cpu_${Math.random().toString(36).substring(2, 10)}`,
-              name: `CPU（${oldName}）`,
-              isCpu: true,
-              cpuStyle,
-              lastSeen: null
-            };
+            const next = { ...p, disconnected: true, disconnectedAt: now, lastSeen: null };
 
-            // 待機中なら即CPU化。ゲーム中のPLOTなら、未提出カードをCPUが選ぶ。
-            if (data.status === 'PLAYING' && data.phase === 'PLOT' && cpu.plottedCard === null) {
-              cpu.plottedCardTemp = chooseCpuCardPure(cpu, idx, data);
-              cpu.plottedCard = 'FACE_DOWN';
-              if (cpu.plottedCardTemp !== 'PASS') {
-                const chosenIndex = cpu.hand.indexOf(cpu.plottedCardTemp);
-                if (chosenIndex !== -1) cpu.hand.splice(chosenIndex, 1);
-              } else {
-                cpu.passRights = false;
-              }
+            // 未提出ならパス扱いにして、残ったプレイヤーでラウンドを止めない。
+            if (data.status === 'PLAYING' && next.plottedCard === null) {
+              next.plottedCardTemp = 'PASS';
+              next.plottedCard = 'FACE_DOWN';
             }
-
-            const logs = Array.isArray(data.logs) ? [...data.logs] : [];
-            logs.push(`⚠️ <strong>${oldName}</strong> が切断したため、<strong class="text-amber-300">${cpu.name}</strong> に交代しました。`);
-            cpu._disconnectLog = logs[logs.length - 1];
-            return cpu;
+            return next;
           });
 
           if (!changed) return;
 
+          const disconnectedNames = players
+            .filter((p, idx) => p.disconnected && !data.players[idx].disconnected)
+            .map(p => p.name)
+            .filter(Boolean);
+
           const logs = Array.isArray(data.logs) ? [...data.logs] : [];
-          players.forEach(p => {
-            if (p._disconnectLog) { logs.push(p._disconnectLog); delete p._disconnectLog; }
+          disconnectedNames.forEach(name => {
+            logs.push(`⚠️ <strong>${name}</strong> が切断したため、以降の手番から離脱扱いにしました。`);
           });
-          transaction.update(ref, { players, logs });
+
+          const activeCount = players.filter(p => !p.disconnected).length;
+          if (activeCount < 2) {
+            transaction.update(ref, {
+              players,
+              logs,
+              status: 'FINISHED',
+              endReason: '対戦を続けるために必要なプレイヤーが2人未満になりました。'
+            });
+          } else {
+            transaction.update(ref, { players, logs });
+          }
         });
       } catch (e) {
         console.warn('切断チェック失敗:', e);
       }
     }
 
+    async function detectHostDisconnect() {
+      if (!currentUser || !currentRoomId || !gameState || gameState.hostId === currentUser.uid) return;
+
+      try {
+        await runTransaction(db, async (transaction) => {
+          const ref = getRoomRef(currentRoomId);
+          const snap = await transaction.get(ref);
+          if (!snap.exists()) return;
+          const data = snap.data();
+          if (data.hostId === currentUser.uid || !Array.isArray(data.players)) return;
+
+          const host = data.players.find(p => p.uid === data.hostId);
+          const lastSeen = Number(host?.lastSeen || 0);
+          if (host && !host.disconnected && lastSeen && Date.now() - lastSeen <= DISCONNECT_TIMEOUT_MS) return;
+
+          const nextHost = data.players.find(p => !p.disconnected && p.uid !== data.hostId);
+          if (!nextHost) return;
+
+          const logs = Array.isArray(data.logs) ? [...data.logs] : [];
+          logs.push(`👑 <strong>${nextHost.name}</strong> が新しいホストになりました。`);
+          transaction.update(ref, { hostId: nextHost.uid, logs });
+        });
+      } catch (e) {
+        console.warn('ホスト引き継ぎチェック失敗:', e);
+      }
+    }
+
     function stopPresenceMonitoring() {
       if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
       if (disconnectCheckTimer) { clearInterval(disconnectCheckTimer); disconnectCheckTimer = null; }
+      if (hostWatchTimer) { clearInterval(hostWatchTimer); hostWatchTimer = null; }
     }
 
     window.addEventListener('beforeunload', () => {
-      // beforeunload内のFirestore書き込みは保証されないため、判定はheartbeatのタイムアウトで行います。
       stopPresenceMonitoring();
     });
 
     // --- Waiting Room ---
     function updateWaitingRoomUI() {
       switchScreen('screen-waiting');
+      const maxPlayers = Number(gameState.playerCount || 4);
       document.getElementById('display-room-id').innerText = gameState.roomId;
       document.getElementById('waiting-count').innerText = gameState.players.length;
-      
+      document.getElementById('waiting-max-count').innerText = maxPlayers;
+
+      const select = document.getElementById('player-count-select');
+      select.value = String(maxPlayers);
+      updatePlayerCountPreview();
+
       const list = document.getElementById('waiting-players-list');
       list.innerHTML = '';
       gameState.players.forEach((p, idx) => {
-        const isHost = idx === 0;
-        const icon = p.isCpu ? '🤖' : (isHost ? '👑' : '👤');
-        list.innerHTML += `<div class="p-3 border-b border-slate-100 last:border-0 font-bold text-slate-700 flex items-center"><span class="w-8 text-center">${icon}</span> ${p.name}</div>`;
+        const isHost = p.uid === gameState.hostId;
+        const canKick = gameState.hostId === currentUser.uid && !isHost;
+        list.innerHTML += `
+          <div class="p-3 border-b border-slate-100 last:border-0 font-bold text-slate-700 flex items-center gap-2">
+            <span class="w-8 text-center">${isHost ? '👑' : '👤'}</span>
+            <span class="truncate flex-1">${p.name}</span>
+            ${isHost ? '<span class="text-[10px] text-amber-500 font-black">HOST</span>' : ''}
+            ${canKick ? `<button data-kick-uid="${p.uid}" class="kick-player-btn text-[10px] bg-rose-50 text-rose-600 border border-rose-200 px-2 py-1 rounded-lg font-black">退室</button>` : ''}
+          </div>`;
       });
-      
+
       if (gameState.hostId === currentUser.uid) {
         document.getElementById('host-controls').classList.remove('hidden');
         document.getElementById('guest-waiting-msg').classList.add('hidden');
-        document.getElementById('btn-add-cpu').disabled = gameState.players.length >= 4;
-        document.getElementById('btn-start-game').disabled = gameState.players.length !== 4;
-      } else {
-        document.getElementById('host-controls').classList.add('hidden');
-        document.getElementById('guest-waiting-msg').classList.remove('hidden');
-      }
-    }
 
-    document.getElementById('btn-add-cpu').addEventListener('click', async () => {
-      if (gameState.hostId !== currentUser.uid || gameState.players.length >= 4) return;
-      setBtnLoading('btn-add-cpu', true);
-      try {
-        const cpuCount = gameState.players.filter(p => p.isCpu).length + 1;
-        gameState.players.push({
-          id: gameState.players.length, uid: `cpu_${Math.random().toString(36).substring(7)}`, name: `CPU ${cpuCount}`,
-          score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: true
+        [...select.options].forEach(opt => {
+          opt.disabled = Number(opt.value) < gameState.players.length;
         });
-        await updateDoc(getRoomRef(currentRoomId), { players: gameState.players });
-      } catch (error) {
-        console.error(error); alert("CPUの追加に失敗しました。");
-      } finally {
-        setBtnLoading('btn-add-cpu', false);
-      }
-    });
 
-    document.getElementById('btn-start-game').addEventListener('click', async () => {
-      if (gameState.hostId !== currentUser.uid || gameState.players.length !== 4) return;
+        document.getElementById('btn-start-game').addEventListener('click', async () => {
+      if (gameState.hostId !== currentUser.uid) return;
+      const playerCount = Number(gameState.playerCount || 4);
+      if (gameState.players.length !== playerCount || playerCount < 2 || playerCount > 4) {
+        alert(`現在は${gameState.players.length}人です。${playerCount}人そろってから開始してください。`);
+        return;
+      }
+
       setBtnLoading('btn-start-game', true);
       try {
-        const initialOya = Math.floor(Math.random() * 4);
-        gameState.oyaIndex = initialOya;
+        gameState.oyaIndex = Math.floor(Math.random() * playerCount);
         gameState.status = 'PLAYING';
+        gameState.baseTargetScore = getBaseTargetScore(playerCount);
         setupRoundState();
         await updateDoc(getRoomRef(currentRoomId), gameState);
       } catch (error) {
@@ -612,135 +732,42 @@
     });
 
     function setupRoundState() {
-      gameState.fieldScore = 0; gameState.targetScore = 10; gameState.rewardPt = 1;
-      gameState.kidokuActivated = false; gameState.skipNextPlayer = false; gameState.disableNextPlayer = false;
-      gameState.lastNumericValue = 0; gameState.phase = 'PLOT';
-      
-      gameState.players.forEach((p, idx) => {
+      const playerCount = Number(gameState.playerCount || gameState.players.length || 4);
+      const baseTarget = getBaseTargetScore(playerCount);
+
+      gameState.fieldScore = 0;
+      gameState.baseTargetScore = baseTarget;
+      gameState.targetScore = baseTarget;
+      gameState.rewardPt = 1;
+      gameState.kidokuActivated = false;
+      gameState.skipNextPlayer = false;
+      gameState.disableNextPlayer = false;
+      gameState.lastNumericValue = 0;
+      gameState.phase = 'PLOT';
+      gameState.roundTurnOrder = getTurnOrder(gameState);
+
+      gameState.players.forEach((p) => {
         p.hand = ['+1','+1','+2','+2','+3','+3', '通知オフ','未読スルー','既読スルー','送信取消','ブロック'];
         p.passRights = false;
         p.plottedCard = null;
-        
-        if (p.isCpu) {
-           p.plottedCardTemp = chooseCpuCard(p, idx);
-           p.plottedCard = 'FACE_DOWN';
-        } else {
-           p.plottedCardTemp = null;
-        }
+        p.plottedCardTemp = null;
       });
-      gameState.logs.push(`--- 🔔 第 ${gameState.round} ラウンド開始 (親: ${gameState.players[gameState.oyaIndex].name}) ---`);
+
+      gameState.logs.push(`--- 🔔 第 ${gameState.round} ラウンド開始 (親: ${gameState.players[gameState.oyaIndex].name} / ${playerCount}人戦・目標${baseTarget}pt) ---`);
       selectedHandIndex = null;
-    }
-
-    // --- CPU Logic ---
-    function chooseCpuCard(cpu, cpuIdx) {
-      const chosen = chooseCpuCardPure(cpu, cpuIdx, gameState);
-      // 手札から選んだカードを消費。PASSも同様に扱う。
-      if (chosen === 'PASS') {
-        cpu.passRights = false;
-        return chosen;
-      }
-      const idx = cpu.hand.indexOf(chosen);
-      if (idx !== -1) cpu.hand.splice(idx, 1);
-      return chosen;
-    }
-
-    function chooseCpuCardPure(cpu, cpuIdx, state) {
-      const hand = Array.isArray(cpu.hand) ? cpu.hand : [];
-      if (!hand.length) return 'PASS';
-
-      const step = (cpuIdx - state.oyaIndex + 4) % 4;
-      const needed = state.targetScore - state.fieldScore;
-      const style = cpu.cpuStyle || CPU_STYLES[cpuIdx % CPU_STYLES.length];
-
-      // パスは「今出しても得をしない」場面を中心に使用。
-      if (cpu.passRights) {
-        const shouldPass = style === '慎重派'
-          ? (state.fieldScore >= state.targetScore - 1 && Math.random() < 0.75)
-          : style === '読み合い型'
-            ? (state.fieldScore >= state.targetScore - 2 && Math.random() < 0.55)
-            : Math.random() < 0.18;
-        if (shouldPass) return 'PASS';
-      }
-
-      const candidates = hand.map((card, idx) => ({ card, idx })).filter(({card}) => {
-        if (card === '既読スルー' && cpuIdx !== state.oyaIndex) return false;
-        if (card === '送信取消' && (step === 0 || state.lastNumericValue <= 0)) return false;
-        if ((card === '通知オフ' || card === 'ブロック') && step === 3) return false;
-        return true;
-      });
-      const pool = candidates.length ? candidates : hand.map((card, idx) => ({card, idx}));
-
-      function scoreCandidate(card) {
-        let score = 0;
-        const numeric = card.startsWith('+') ? parseInt(card, 10) : 0;
-        const next = state.fieldScore + numeric;
-
-        // まずは「ピッタリ」を最優先。
-        if (numeric > 0 && next === state.targetScore) score += 100;
-        if (numeric > 0 && next > state.targetScore) score -= 90;
-        if (numeric > 0 && next < state.targetScore) {
-          const remain = state.targetScore - next;
-          score += Math.max(0, 28 - remain * 4);
-        }
-
-        if (card === 'PASS') score += 5;
-        if (card === '未読スルー') {
-          score += style === '慎重派' ? 18 : 10;
-          if (needed <= 2) score += 6;
-        }
-        if (card === '既読スルー') {
-          score += cpuIdx === state.oyaIndex ? 45 : -100;
-          if (state.fieldScore >= 7) score += 25;
-        }
-        if (card === '通知オフ') {
-          score += step < 3 ? 18 : -40;
-          if (state.fieldScore >= state.targetScore - 3) score += 15;
-          if (style === '特殊カード型') score += 18;
-        }
-        if (card === 'ブロック') {
-          score += step < 3 ? 16 : -35;
-          if (state.fieldScore >= state.targetScore - 2) score += 18;
-          if (style === '攻撃型') score += 15;
-        }
-        if (card === '送信取消') {
-          score += step > 0 && state.lastNumericValue > 0 ? 24 : -60;
-          if (style === '慎重派') score += 12;
-          if (state.fieldScore >= state.targetScore - 2) score += 20;
-        }
-
-        // 終盤は低い数字を温存し、高い数字を使う判断を強化。
-        if (numeric > 0) {
-          if (needed === 1 && numeric === 1) score += 35;
-          if (needed === 2 && numeric === 2) score += 32;
-          if (needed === 3 && numeric === 3) score += 30;
-          if (style === '攻撃型') score += numeric * 3;
-          if (style === '慎重派') score -= numeric * 1.5;
-        }
-
-        // 特殊カード型は特殊カードを温存しすぎない。
-        if (style === '特殊カード型' && !card.startsWith('+')) score += 10;
-        if (style === '読み合い型' && (card === '通知オフ' || card === 'ブロック' || card === '送信取消')) score += 8;
-
-        // ランダム性は小さく残し、毎回完全に同じ手にならないようにする。
-        score += Math.random() * 5;
-        return score;
-      }
-
-      const ranked = pool.map(item => ({ ...item, score: scoreCandidate(item.card) }));
-      ranked.sort((a,b) => b.score - a.score);
-      return ranked[0].card;
     }
 
     // --- Game UI Setup & Update ---
     function initGameDOM() {
       const pGrid = document.getElementById('players-grid');
       pGrid.innerHTML = '';
-      
-      let myPlayerId = gameState.players.find(p => p.uid === currentUser.uid)?.id || 0;
-      for (let i=0; i<4; i++) {
-        const pIdx = (myPlayerId + i) % 4; 
-        
+      const activePlayers = gameState.players.filter(p => !p.disconnected);
+      const myPlayerId = gameState.players.find(p => p.uid === currentUser.uid)?.id ?? 0;
+      const gridClass = activePlayers.length === 2 ? 'grid-cols-2' : activePlayers.length === 3 ? 'grid-cols-3' : 'grid-cols-4';
+      pGrid.className = `grid ${gridClass} gap-2`;
+
+      activePlayers.forEach((p) => {
+        const pIdx = p.id;
         const container = document.createElement('div');
         container.className = "flex flex-col space-y-1.5";
         container.innerHTML = `
@@ -764,7 +791,7 @@
           </div>
         `;
         pGrid.appendChild(container);
-      }
+      });
       isUIInitialized = true;
     }
 
@@ -790,8 +817,12 @@
 
       // プレイヤー情報とカードアニメーション
       gameState.players.forEach(p => {
+        if (p.disconnected) return;
         const pIdx = p.id;
-        document.getElementById(`player-name-${pIdx}`).innerText = p.isCpu && p.cpuStyle ? `🤖 ${p.name}` : p.name;
+        const nameEl = document.getElementById(`player-name-${pIdx}`);
+        const scoreEl = document.getElementById(`player-score-${pIdx}`);
+        if (!nameEl || !scoreEl) return;
+        nameEl.innerText = p.name;
         document.getElementById(`player-score-${pIdx}`).innerText = p.score;
         
         const oyaIcon = document.getElementById(`player-oya-${pIdx}`);
@@ -908,99 +939,138 @@
     // --- Host Game Logic (Reveal & Evaluate) ---
     async function processRevealStep(step) {
       if (gameState.hostId !== currentUser.uid) return;
-      const turnOrder = [];
-      for (let i = 0; i < 4; i++) turnOrder.push((gameState.oyaIndex + i) % 4);
-      
+
+      const turnOrder = gameState.roundTurnOrder || getTurnOrder(gameState);
+      if (turnOrder.length < 2 || step >= turnOrder.length) return;
+
       const pIdx = turnOrder[step];
       const p = gameState.players[pIdx];
-      const actualCard = p.plottedCardTemp;
-      
-      p.plottedCard = actualCard; // 表にする
-      
-      let skipDraw = false;
-      if (gameState.skipNextPlayer) {
+      if (!p) return;
+      if (p.disconnected) {
+        gameState.logs.push(`⚠️ <strong>${p.name}</strong> は切断済みのため、この手番をスキップしました。`);
+        if (step < turnOrder.length - 1) {
+          gameState.phase = `REVEAL_${step + 1}`;
+          await updateDoc(getRoomRef(currentRoomId), { phase: gameState.phase, logs: gameState.logs });
+          setTimeout(() => processRevealStep(step + 1), 150);
+        } else {
+          gameState.players.forEach(player => {
+            if (!player.disconnected) {
+              player.plottedCard = null;
+              player.plottedCardTemp = null;
+            }
+          });
+          gameState.phase = 'PLOT';
+          await updateDoc(getRoomRef(currentRoomId), gameState);
+        }
+        return;
+      }
+
+      // 切断直後などで未提出ならパス扱い。
+      const actualCard = p.plottedCardTemp || 'PASS';
+      p.plottedCard = actualCard;
+
+      if (actualCard === 'PASS') {
+        gameState.logs.push(`⏩ <strong class="text-emerald-400">${p.name}</strong> はパスしました。`);
+      } else if (gameState.skipNextPlayer) {
         gameState.logs.push(`🚫 <strong class="text-slate-300">${p.name}</strong> はブロックされているためスキップ！`);
         gameState.skipNextPlayer = false;
-      } else if (actualCard === 'PASS') {
-        gameState.logs.push(`⏩ <strong class="text-emerald-400">${p.name}</strong> はパス権を行使しました。`);
       } else if (gameState.disableNextPlayer) {
         gameState.logs.push(`🔕 <strong class="text-amber-300">${p.name}</strong> のカード [${actualCard}] は「通知オフ」で無効化！(+0)`);
         gameState.disableNextPlayer = false;
       } else {
-        // 効果発動
         if (['+1', '+2', '+3'].includes(actualCard)) {
-          const val = parseInt(actualCard); gameState.fieldScore += val; gameState.lastNumericValue = val;
+          const val = parseInt(actualCard, 10);
+          gameState.fieldScore += val;
+          gameState.lastNumericValue = val;
           gameState.logs.push(`➕ <strong>${p.name}</strong> が [${actualCard}] を開いた (合計: <strong class="text-cyan-300">${gameState.fieldScore}</strong>)`);
         } else if (actualCard === '未読スルー') {
-          p.passRights = true; gameState.logs.push(`🛋️ <strong>${p.name}</strong> が [未読スルー] を発動！次回パス権を獲得。`);
+          p.passRights = true;
+          gameState.logs.push(`🛋️ <strong>${p.name}</strong> が [未読スルー] を発動！次回パス権を獲得。`);
         } else if (actualCard === '既読スルー') {
           if (pIdx === gameState.oyaIndex) {
-            gameState.kidokuActivated = true; gameState.logs.push(`👀 <strong>${p.name}</strong> (親) が [既読スルー] を宣言！10pt以上で延長＆高得点！`);
-          } else { gameState.logs.push(`👀 <strong>${p.name}</strong> が [既読スルー] を出したが親ではないため無効 (+0)`); }
+            gameState.kidokuActivated = true;
+            gameState.logs.push(`👀 <strong>${p.name}</strong> (親) が [既読スルー] を宣言！${gameState.baseTargetScore}pt到達で延長＆高得点！`);
+          } else {
+            gameState.logs.push(`👀 <strong>${p.name}</strong> が [既読スルー] を出したが親ではないため無効 (+0)`);
+          }
         } else if (actualCard === '通知オフ') {
-          if (step < 3) gameState.disableNextPlayer = true;
+          if (step < turnOrder.length - 1) gameState.disableNextPlayer = true;
           gameState.logs.push(`🚫 <strong>${p.name}</strong> が [通知オフ] を使用！次の人を無効化。`);
         } else if (actualCard === '送信取消') {
           if (step > 0 && gameState.lastNumericValue > 0) {
             gameState.fieldScore = Math.max(0, gameState.fieldScore - gameState.lastNumericValue);
             gameState.logs.push(`↩️ <strong>${p.name}</strong> が [送信取消] を使用！直前の +${gameState.lastNumericValue} を引き戻した (合計: <strong class="text-cyan-300">${gameState.fieldScore}</strong>)`);
             gameState.lastNumericValue = 0;
-          } else { gameState.logs.push(`↩️ <strong>${p.name}</strong> が [送信取消] を使用したが、引き戻し失敗。`); }
+          } else {
+            gameState.logs.push(`↩️ <strong>${p.name}</strong> が [送信取消] を使用したが、引き戻し失敗。`);
+          }
         } else if (actualCard === 'ブロック') {
-          if (step < 3) gameState.skipNextPlayer = true;
+          if (step < turnOrder.length - 1) gameState.skipNextPlayer = true;
           gameState.logs.push(`🧱 <strong>${p.name}</strong> が [ブロック] を使用！次の人を強制お休み。`);
         }
       }
-      
-      // カード補充
-      if (actualCard !== 'PASS' && !skipDraw) {
+
+      // 数字カードを出したプレイヤーは山から1枚補充。
+      if (['+1', '+2', '+3'].includes(actualCard)) {
         p.hand.push(['+1', '+2', '+3'][Math.floor(Math.random() * 3)]);
       }
 
-      // 決着判定
       let roundFinished = false;
-      if (gameState.kidokuActivated && gameState.fieldScore >= 10 && gameState.targetScore === 10) {
-        gameState.logs.push(`🔥 【既読スルー成功！】親の <strong class="text-amber-300">${gameState.players[gameState.oyaIndex].name}</strong> に 1pt！ゴール20ptへ！`);
+
+      // 既読スルー成功は「その人数の基本目標」に到達した時点で発動。
+      if (gameState.kidokuActivated &&
+          gameState.fieldScore >= gameState.baseTargetScore &&
+          gameState.targetScore === gameState.baseTargetScore) {
+        gameState.logs.push(`🔥 【既読スルー成功！】親の <strong class="text-amber-300">${gameState.players[gameState.oyaIndex].name}</strong> に 1pt！ゴール${gameState.baseTargetScore * 2}ptへ！`);
         gameState.players[gameState.oyaIndex].score += 1;
-        gameState.targetScore = 20; gameState.rewardPt = 2;
+        gameState.targetScore = gameState.baseTargetScore * 2;
+        gameState.rewardPt = 2;
       }
 
       if (gameState.fieldScore === gameState.targetScore) {
         gameState.logs.push(`🎯 <strong class="text-emerald-400">${p.name}</strong> がピッタリ ${gameState.targetScore}pt 達成！ <strong>+${gameState.rewardPt}pt</strong>`);
-        p.score += gameState.rewardPt; roundFinished = true;
+        p.score += gameState.rewardPt;
+        roundFinished = true;
       } else if (gameState.fieldScore > gameState.targetScore) {
-        const prevStep = (step + 3) % 4;
+        const prevStep = (step - 1 + turnOrder.length) % turnOrder.length;
         const prevPIdx = turnOrder[prevStep];
         const prevP = gameState.players[prevPIdx];
         gameState.logs.push(`💥 <strong class="text-rose-400">${p.name}</strong> がスベった！ (${gameState.fieldScore}pt) 一つ前の <strong class="text-indigo-300">${prevP.name}</strong> に <strong>+${gameState.rewardPt}pt</strong>！`);
-        prevP.score += gameState.rewardPt; roundFinished = true;
+        prevP.score += gameState.rewardPt;
+        roundFinished = true;
       }
 
-      await updateDoc(getRoomRef(currentRoomId), gameState); // UI同期
+      await updateDoc(getRoomRef(currentRoomId), gameState);
 
       if (roundFinished) {
-         setTimeout(async () => {
-             gameState.phase = 'ROUND_END';
-             await updateDoc(getRoomRef(currentRoomId), gameState);
-         }, 1500);
-         return;
+        setTimeout(async () => {
+          gameState.phase = 'ROUND_END';
+          await updateDoc(getRoomRef(currentRoomId), gameState);
+        }, 1500);
+        return;
       }
 
-      // 次のプレイヤーへ
-      if (step < 3) {
+      if (step < turnOrder.length - 1) {
         setTimeout(async () => {
           gameState.phase = `REVEAL_${step + 1}`;
           await updateDoc(getRoomRef(currentRoomId), { phase: gameState.phase });
-          setTimeout(() => processRevealStep(step + 1), 150); 
-        }, 500); 
+          setTimeout(() => processRevealStep(step + 1), 150);
+        }, 500);
       } else {
         setTimeout(async () => {
           if (gameState.kidokuActivated && gameState.fieldScore < gameState.targetScore) {
             gameState.logs.push(`❌ 既読スルー失敗！親の <strong class="text-amber-300">${gameState.players[gameState.oyaIndex].name}</strong> 以外の全員に +1pt！`);
-            gameState.players.forEach((player, idx) => { if (idx !== gameState.oyaIndex) player.score += 1; });
+            gameState.players.forEach((player, idx) => {
+              if (!player.disconnected && idx !== gameState.oyaIndex) player.score += 1;
+            });
             gameState.phase = 'ROUND_END';
           } else {
-            gameState.players.forEach(player => { player.plottedCard = null; player.plottedCardTemp = null; });
+            gameState.players.forEach(player => {
+              if (!player.disconnected) {
+                player.plottedCard = null;
+                player.plottedCardTemp = null;
+              }
+            });
             gameState.phase = 'PLOT';
           }
           await updateDoc(getRoomRef(currentRoomId), gameState);
@@ -1041,7 +1111,7 @@
           alert('ゲーム終了！ロビーに戻ります。'); location.reload();
         } else {
           gameState.round++;
-          gameState.oyaIndex = (gameState.oyaIndex + 1) % 4;
+          gameState.oyaIndex = getNextActivePlayerIndex(gameState, gameState.oyaIndex);
           setupRoundState();
           await updateDoc(getRoomRef(currentRoomId), gameState);
         }
