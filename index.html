@@ -12,45 +12,25 @@
       font-family: 'M PLUS Rounded 1c', -apple-system, sans-serif;
       user-select: none;
     }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: #f1f5f9;
-      border-radius: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     
     /* フリップカード用CSS */
     .perspective-1000 { perspective: 1000px; }
     .flip-card-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
+      position: relative; width: 100%; height: 100%;
       transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
       transform-style: preserve-3d;
     }
-    .flip-card-inner.flipped {
-      transform: rotateY(180deg);
-    }
+    .flip-card-inner.flipped { transform: rotateY(180deg); }
     .flip-card-front, .flip-card-back {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      position: absolute; width: 100%; height: 100%;
+      -webkit-backface-visibility: hidden; backface-visibility: hidden;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
       border-radius: 0.75rem;
     }
-    .flip-card-back {
-      transform: rotateY(180deg);
-    }
+    .flip-card-back { transform: rotateY(180deg); }
   </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col items-center p-2 sm:p-4">
@@ -71,8 +51,13 @@
     </header>
 
     <!-- 1. ロビー画面 -->
-    <div id="screen-lobby" class="flex-1 flex flex-col justify-center p-6 space-y-8 bg-slate-50">
-      <div class="text-center">
+    <div id="screen-lobby" class="flex-1 flex flex-col justify-center p-6 space-y-8 bg-slate-50 relative">
+      <!-- データベース未接続時の警告表示エリア -->
+      <div id="db-warning" class="absolute top-4 left-4 right-4 bg-rose-100 border border-rose-300 text-rose-700 p-3 rounded-xl text-xs font-bold hidden shadow-sm">
+        <i class="fa-solid fa-triangle-exclamation mr-1"></i> データベース(Firebase)の設定が見つかりません。コード内の <code>firebaseConfig</code> を設定してください。
+      </div>
+
+      <div class="text-center pt-8">
         <i class="fa-solid fa-earth-americas text-4xl text-indigo-300 mb-2"></i>
         <h2 class="text-2xl font-black text-indigo-700">オンライン対戦</h2>
         <p class="text-xs text-slate-500 mt-1 font-bold">友達とルームIDを共有して遊ぼう！</p>
@@ -84,7 +69,10 @@
       </div>
       
       <div class="space-y-3 pt-2">
-        <button id="btn-create-room" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all text-lg disabled:opacity-50">部屋を作る</button>
+        <button id="btn-create-room" disabled class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all text-lg disabled:opacity-50 flex items-center justify-center">
+          <span id="text-create-room">部屋を作る</span>
+          <i id="spinner-create-room" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
+        </button>
       </div>
       
       <div class="relative flex py-2 items-center">
@@ -95,7 +83,10 @@
       
       <div class="space-y-3">
         <input type="text" id="room-id-input" placeholder="ルームID (5桁)" maxlength="5" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-black tracking-widest text-2xl text-center text-slate-700 focus:border-emerald-400 focus:outline-none transition shadow-sm">
-        <button id="btn-join-room" class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-95 transition-all text-lg disabled:opacity-50">部屋に参加する</button>
+        <button id="btn-join-room" disabled class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-95 transition-all text-lg disabled:opacity-50 flex items-center justify-center">
+          <span id="text-join-room">部屋に参加する</span>
+          <i id="spinner-join-room" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
+        </button>
       </div>
     </div>
 
@@ -117,10 +108,14 @@
       </div>
       
       <div class="mt-6 space-y-3" id="host-controls">
-        <button id="btn-add-cpu" class="w-full py-3.5 bg-amber-500 text-white rounded-2xl font-bold shadow-md hover:bg-amber-600 active:scale-95 transition flex justify-center items-center">
+        <button id="btn-add-cpu" class="w-full py-3.5 bg-amber-500 text-white rounded-2xl font-bold shadow-md hover:bg-amber-600 active:scale-95 transition flex justify-center items-center disabled:opacity-50">
           <i class="fa-solid fa-robot mr-2"></i> 足りない枠をCPUで埋める
+          <i id="spinner-add-cpu" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
         </button>
-        <button id="btn-start-game" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition text-lg disabled:opacity-50">ゲームを開始する</button>
+        <button id="btn-start-game" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition text-lg disabled:opacity-50 flex justify-center items-center">
+          <span id="text-start-game">ゲームを開始する</span>
+          <i id="spinner-start-game" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
+        </button>
       </div>
       
       <div id="guest-waiting-msg" class="hidden mt-6 bg-slate-100 rounded-xl p-4 text-center border border-slate-200">
@@ -196,8 +191,9 @@
     <!-- アクションエリア (ゲーム画面時のみ表示) -->
     <footer id="footer-action" class="p-3 bg-white border-t border-slate-100 hidden relative z-10">
       <button id="submit-btn" disabled class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 text-white font-extrabold text-sm rounded-2xl shadow-lg disabled:shadow-none transition-all duration-200 flex items-center justify-center space-x-2">
-        <span>カードを提出する</span>
-        <i class="fa-solid fa-paper-plane"></i>
+        <span id="text-submit">カードを提出する</span>
+        <i id="spinner-submit" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
+        <i id="icon-submit" class="fa-solid fa-paper-plane ml-2"></i>
       </button>
     </footer>
 
@@ -213,8 +209,9 @@
       <div class="bg-slate-50 rounded-2xl p-3 mb-4 space-y-2 text-left text-xs font-bold border border-slate-100" id="modal-scores"></div>
 
       <!-- ホスト用ボタン -->
-      <button id="modal-next-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-2xl shadow-md transition hidden">
-        次のラウンドへ
+      <button id="modal-next-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-2xl shadow-md transition hidden flex justify-center items-center">
+        <span id="text-modal-next">次のラウンドへ</span>
+        <i id="spinner-modal-next" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
       </button>
       <!-- ゲスト用メッセージ -->
       <div id="modal-waiting-msg" class="w-full py-3 bg-slate-100 text-slate-500 font-bold rounded-2xl hidden">
@@ -228,12 +225,40 @@
     import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // --- Firebase Initialization ---
-    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    // ============================================================================
+    // 【重要】 Firebaseの設定オブジェクト（重複定義を修正）
+    // ============================================================================
+    const myFirebaseConfig = {
+      apiKey: "AIzaSyC2DBLQGSUQX0XD6sURW3C6TqsK34zwaW4",
+      authDomain: "online-kidokugame.firebaseapp.com",
+      projectId: "online-kidokugame",
+      storageBucket: "online-kidokugame.firebasestorage.app",
+      messagingSenderId: "1063570245036",
+      appId: "1:1063570245036:web:39796c3f5f8e4460452609",
+      measurementId: "G-2SNWGX4FC3"
+    };
+
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : myFirebaseConfig;
+    let app, auth, db;
+    let isFirebaseReady = false;
+
+    // Configが空かどうかの簡易チェック
+    if (Object.keys(firebaseConfig).length === 0) {
+      document.getElementById('db-warning').classList.remove('hidden');
+      console.error("Firebaseの設定(firebaseConfig)が見つかりません。");
+    } else {
+      try {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        isFirebaseReady = true;
+      } catch (error) {
+        console.error("Firebase初期化エラー:", error);
+        alert("データベースの初期化に失敗しました。設定を確認してください。\n" + error.message);
+      }
+    }
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'kidoku-online-default';
 
     // --- Global State ---
     let currentUser = null;
@@ -241,8 +266,8 @@
     let unsubscribeSnapshot = null;
     let gameState = null;
     let isUIInitialized = false;
-    let selectedHandIndex = null; // ローカルの選択状態
-    let isHostProcessingReveal = false; // 二重実行防止
+    let selectedHandIndex = null; 
+    let isHostProcessingReveal = false; 
 
     const CARDS = { NUM: ['+1', '+2', '+3'], SPECIAL: ['通知オフ', '未読スルー', '既読スルー', '送信取消', 'ブロック'] };
     const CARD_COLORS = {
@@ -253,23 +278,29 @@
 
     // --- Auth Setup ---
     async function initAuth() {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
+      if (!isFirebaseReady) return;
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (error) {
+        console.error("認証エラー:", error);
+        alert("データベースへの接続(認証)に失敗しました。");
       }
     }
     
-    onAuthStateChanged(auth, user => {
-      currentUser = user;
-      if (user) {
-        document.getElementById('btn-create-room').disabled = false;
-        document.getElementById('btn-join-room').disabled = false;
-      }
-    });
-    
-    // アプリ起動
-    initAuth();
+    if (isFirebaseReady) {
+      onAuthStateChanged(auth, user => {
+        currentUser = user;
+        if (user) {
+          document.getElementById('btn-create-room').disabled = false;
+          document.getElementById('btn-join-room').disabled = false;
+        }
+      });
+      initAuth();
+    }
 
     function getRoomRef(roomId) {
       return doc(db, 'artifacts', appId, 'public', 'data', 'kidoku_rooms', roomId);
@@ -290,47 +321,86 @@
       }
     }
 
+    // --- ボタンのローディング状態切り替え ---
+    function setBtnLoading(btnId, isLoading) {
+      const btn = document.getElementById(btnId);
+      if (!btn) return;
+      const text = document.getElementById(`text-${btnId.replace('btn-', '')}`);
+      const spinner = document.getElementById(`spinner-${btnId.replace('btn-', '')}`);
+      const icon = document.getElementById(`icon-${btnId.replace('btn-', '')}`);
+      
+      if (isLoading) {
+        btn.disabled = true;
+        if (spinner) spinner.classList.remove('hidden');
+        if (icon) icon.classList.add('hidden');
+      } else {
+        btn.disabled = false;
+        if (spinner) spinner.classList.add('hidden');
+        if (icon) icon.classList.remove('hidden');
+      }
+    }
+
     // --- Lobby Functions ---
     document.getElementById('btn-create-room').addEventListener('click', async () => {
-      if (!currentUser) return;
-      const playerName = document.getElementById('player-name').value || 'ホスト';
-      const roomId = Math.floor(10000 + Math.random() * 90000).toString();
+      if (!currentUser) { alert("認証が完了していません。Firebaseの設定を確認してください。"); return; }
       
-      const initialGameState = {
-        roomId, hostId: currentUser.uid, status: 'WAITING', round: 1, oyaIndex: 0,
-        fieldScore: 0, targetScore: 10, rewardPt: 1, kidokuActivated: false,
-        skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
-        playerSeatOrder: [0, 1, 2, 3], logs: [],
-        players: [{ id: 0, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: false }]
-      };
+      setBtnLoading('btn-create-room', true);
+      
+      try {
+        const playerName = document.getElementById('player-name').value || 'ホスト';
+        const roomId = Math.floor(10000 + Math.random() * 90000).toString();
+        
+        const initialGameState = {
+          roomId, hostId: currentUser.uid, status: 'WAITING', round: 1, oyaIndex: 0,
+          fieldScore: 0, targetScore: 10, rewardPt: 1, kidokuActivated: false,
+          skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
+          playerSeatOrder: [0, 1, 2, 3], logs: [],
+          players: [{ id: 0, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: false }]
+        };
 
-      await setDoc(getRoomRef(roomId), initialGameState);
-      currentRoomId = roomId;
-      listenRoom(roomId);
+        await setDoc(getRoomRef(roomId), initialGameState);
+        currentRoomId = roomId;
+        listenRoom(roomId);
+      } catch (error) {
+        console.error(error);
+        alert("部屋の作成に失敗しました。\n" + error.message);
+      } finally {
+        setBtnLoading('btn-create-room', false);
+      }
     });
 
     document.getElementById('btn-join-room').addEventListener('click', async () => {
-      if (!currentUser) return;
-      const playerName = document.getElementById('player-name').value || 'ゲスト';
+      if (!currentUser) { alert("認証が完了していません。Firebaseの設定を確認してください。"); return; }
+      
       const roomId = document.getElementById('room-id-input').value.trim();
       if (roomId.length !== 5) { alert('5桁のルームIDを入力してください'); return; }
-      
-      const docSnap = await getDoc(getRoomRef(roomId));
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        if (data.status !== 'WAITING') { alert('すでにゲームが開始されています'); return; }
-        if (data.players.length >= 4) { alert('満室です'); return; }
+
+      setBtnLoading('btn-join-room', true);
+
+      try {
+        const playerName = document.getElementById('player-name').value || 'ゲスト';
         
-        // 既存プレイヤーかチェック (リロード対策)
-        let playerExists = data.players.some(p => p.uid === currentUser.uid);
-        if (!playerExists) {
-            data.players.push({ id: data.players.length, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: false });
-            await updateDoc(getRoomRef(roomId), { players: data.players });
+        const docSnap = await getDoc(getRoomRef(roomId));
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.status !== 'WAITING') { alert('すでにゲームが開始されています'); return; }
+          if (data.players.length >= 4) { alert('満室です'); return; }
+          
+          let playerExists = data.players.some(p => p.uid === currentUser.uid);
+          if (!playerExists) {
+              data.players.push({ id: data.players.length, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: false });
+              await updateDoc(getRoomRef(roomId), { players: data.players });
+          }
+          currentRoomId = roomId;
+          listenRoom(roomId);
+        } else {
+          alert('部屋が見つかりません');
         }
-        currentRoomId = roomId;
-        listenRoom(roomId);
-      } else {
-        alert('部屋が見つかりません');
+      } catch (error) {
+        console.error(error);
+        alert("部屋への参加に失敗しました。\n" + error.message);
+      } finally {
+        setBtnLoading('btn-join-room', false);
       }
     });
 
@@ -350,7 +420,7 @@
         if (gameState.status === 'WAITING') updateWaitingRoomUI();
         else if (gameState.status === 'PLAYING') updateGameUI();
 
-        // ホストの自動進行ロジック (PLOT完了を検知)
+        // ホストの自動進行ロジック
         if (gameState.status === 'PLAYING' && gameState.hostId === currentUser.uid) {
            if (gameState.phase === 'PLOT') {
               const allPlotted = gameState.players.length === 4 && gameState.players.every(p => p.plottedCard === 'FACE_DOWN');
@@ -360,14 +430,17 @@
                     gameState.phase = 'REVEAL_0';
                     gameState.logs.push('🃏 全員のカードが出揃いました。親から順にオープンします！');
                     await updateDoc(getRoomRef(currentRoomId), gameState);
-                    setTimeout(() => processRevealStep(0), 500); // フリップ実行までの間隔
+                    setTimeout(() => processRevealStep(0), 500); 
                  }, 800);
               }
            } else {
               isHostProcessingReveal = false;
            }
         }
-      }, (err) => console.error(err));
+      }, (err) => {
+        console.error("データ同期エラー:", err);
+        alert("データ同期中にエラーが発生しました。\n" + err.message);
+      });
     }
 
     // --- Waiting Room ---
@@ -397,22 +470,35 @@
 
     document.getElementById('btn-add-cpu').addEventListener('click', async () => {
       if (gameState.hostId !== currentUser.uid || gameState.players.length >= 4) return;
-      const cpuCount = gameState.players.filter(p => p.isCpu).length + 1;
-      gameState.players.push({
-        id: gameState.players.length, uid: `cpu_${Math.random().toString(36).substring(7)}`, name: `CPU ${cpuCount}`,
-        score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: true
-      });
-      await updateDoc(getRoomRef(currentRoomId), { players: gameState.players });
+      setBtnLoading('btn-add-cpu', true);
+      try {
+        const cpuCount = gameState.players.filter(p => p.isCpu).length + 1;
+        gameState.players.push({
+          id: gameState.players.length, uid: `cpu_${Math.random().toString(36).substring(7)}`, name: `CPU ${cpuCount}`,
+          score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, isCpu: true
+        });
+        await updateDoc(getRoomRef(currentRoomId), { players: gameState.players });
+      } catch (error) {
+        console.error(error); alert("CPUの追加に失敗しました。");
+      } finally {
+        setBtnLoading('btn-add-cpu', false);
+      }
     });
 
     document.getElementById('btn-start-game').addEventListener('click', async () => {
       if (gameState.hostId !== currentUser.uid || gameState.players.length !== 4) return;
-      
-      const initialOya = Math.floor(Math.random() * 4);
-      gameState.oyaIndex = initialOya;
-      gameState.status = 'PLAYING';
-      setupRoundState();
-      await updateDoc(getRoomRef(currentRoomId), gameState);
+      setBtnLoading('btn-start-game', true);
+      try {
+        const initialOya = Math.floor(Math.random() * 4);
+        gameState.oyaIndex = initialOya;
+        gameState.status = 'PLAYING';
+        setupRoundState();
+        await updateDoc(getRoomRef(currentRoomId), gameState);
+      } catch (error) {
+        console.error(error); alert("ゲームの開始に失敗しました。");
+      } finally {
+        setBtnLoading('btn-start-game', false);
+      }
     });
 
     function setupRoundState() {
@@ -425,7 +511,6 @@
         p.passRights = false;
         p.plottedCard = null;
         
-        // CPUはあらかじめカードを決定しておく
         if (p.isCpu) {
            p.plottedCardTemp = chooseCpuCard(p, idx);
            p.plottedCard = 'FACE_DOWN';
@@ -479,7 +564,7 @@
       
       let myPlayerId = gameState.players.find(p => p.uid === currentUser.uid)?.id || 0;
       for (let i=0; i<4; i++) {
-        const pIdx = (myPlayerId + i) % 4; // 自分を起点に時計回り
+        const pIdx = (myPlayerId + i) % 4; 
         
         const container = document.createElement('div');
         container.className = "flex flex-col space-y-1.5";
@@ -621,20 +706,28 @@
     document.getElementById('submit-btn').addEventListener('click', async () => {
       if (gameState.phase !== 'PLOT' || selectedHandIndex === null) return;
       
-      const myIdx = gameState.players.findIndex(p => p.uid === currentUser.uid);
-      const me = gameState.players[myIdx];
-      if (me.plottedCard !== null) return; // 提出済み
-      
-      if (selectedHandIndex === 'PASS') {
-        me.plottedCardTemp = 'PASS'; me.passRights = false;
-      } else {
-        me.plottedCardTemp = me.hand.splice(selectedHandIndex, 1)[0];
+      setBtnLoading('submit-btn', true);
+      try {
+        const myIdx = gameState.players.findIndex(p => p.uid === currentUser.uid);
+        const me = gameState.players[myIdx];
+        if (me.plottedCard !== null) return; // 提出済み
+        
+        if (selectedHandIndex === 'PASS') {
+          me.plottedCardTemp = 'PASS'; me.passRights = false;
+        } else {
+          me.plottedCardTemp = me.hand.splice(selectedHandIndex, 1)[0];
+        }
+        me.plottedCard = 'FACE_DOWN';
+        selectedHandIndex = null;
+        
+        updateGameUI(); // ローカル先行更新
+        await updateDoc(getRoomRef(currentRoomId), { players: gameState.players });
+      } catch (e) {
+        console.error(e);
+        alert("カードの提出に失敗しました");
+      } finally {
+        setBtnLoading('submit-btn', false);
       }
-      me.plottedCard = 'FACE_DOWN';
-      selectedHandIndex = null;
-      
-      updateGameUI(); // ローカル先行更新
-      await updateDoc(getRoomRef(currentRoomId), { players: gameState.players });
     });
 
     // --- Host Game Logic (Reveal & Evaluate) ---
@@ -723,8 +816,8 @@
         setTimeout(async () => {
           gameState.phase = `REVEAL_${step + 1}`;
           await updateDoc(getRoomRef(currentRoomId), { phase: gameState.phase });
-          setTimeout(() => processRevealStep(step + 1), 150); // アニメーション間のラグ
-        }, 500); // フリップと効果を見る時間
+          setTimeout(() => processRevealStep(step + 1), 150); 
+        }, 500); 
       } else {
         setTimeout(async () => {
           if (gameState.kidokuActivated && gameState.fieldScore < gameState.targetScore) {
@@ -756,7 +849,7 @@
       const waitMsg = document.getElementById('modal-waiting-msg');
       if (gameState.hostId === currentUser.uid) {
         nextBtn.classList.remove('hidden'); waitMsg.classList.add('hidden');
-        nextBtn.innerText = gameState.round >= 4 ? '最終結果を見る' : `第 ${gameState.round + 1} ラウンドへ`;
+        nextBtn.innerHTML = gameState.round >= 4 ? '<span id="text-modal-next">最終結果を見る</span><i id="spinner-modal-next" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>' : `<span id="text-modal-next">第 ${gameState.round + 1} ラウンドへ</span><i id="spinner-modal-next" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>`;
       } else {
         nextBtn.classList.add('hidden'); waitMsg.classList.remove('hidden');
       }
@@ -765,14 +858,22 @@
 
     document.getElementById('modal-next-btn').addEventListener('click', async () => {
       if (gameState.hostId !== currentUser.uid) return;
-      if (gameState.round >= 4) {
-        await updateDoc(getRoomRef(currentRoomId), { status: 'FINISHED' });
-        alert('ゲーム終了！ロビーに戻ります。'); location.reload();
-      } else {
-        gameState.round++;
-        gameState.oyaIndex = (gameState.oyaIndex + 1) % 4;
-        setupRoundState();
-        await updateDoc(getRoomRef(currentRoomId), gameState);
+      
+      setBtnLoading('modal-next', true);
+      try {
+        if (gameState.round >= 4) {
+          await updateDoc(getRoomRef(currentRoomId), { status: 'FINISHED' });
+          alert('ゲーム終了！ロビーに戻ります。'); location.reload();
+        } else {
+          gameState.round++;
+          gameState.oyaIndex = (gameState.oyaIndex + 1) % 4;
+          setupRoundState();
+          await updateDoc(getRoomRef(currentRoomId), gameState);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setBtnLoading('modal-next', false);
       }
     });
 
