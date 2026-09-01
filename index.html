@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット (オンライン対戦版 v1.5.3)</title>
+  <title>既読スルー・プロット (オンライン対戦版 v1.5.5)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -46,7 +46,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.5.3</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.5.5</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -101,7 +101,7 @@
       <div class="text-center mb-5">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.5.3</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.5.5</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -292,7 +292,7 @@
     let disconnectCheckTimer = null;
     const HEARTBEAT_MS = 5000;
     const DISCONNECT_TIMEOUT_MS = 20000;
-    const GAME_VERSION = '1.5.3';
+    const GAME_VERSION = '1.5.5';
     const PLAYER_TARGETS = { 2: 8, 3: 9, 4: 10 };
     const PLAYER_ROUND_LIMITS = { 2: 4, 3: 3, 4: 4 };
     let hostWatchTimer = null;
@@ -820,6 +820,7 @@
       gameState.targetScore = baseTarget;
       gameState.rewardPt = 1;
       gameState.kidokuActivated = false;
+      gameState.kidokuExtensionPending = false;
       gameState.skipNextPlayer = false;
       gameState.disableNextPlayer = false;
       gameState.lastNumericValue = 0;
@@ -1031,6 +1032,9 @@
 
       const pIdx = turnOrder[step];
       const p = gameState.players[pIdx];
+      if (step === 0 && gameState.kidokuExtensionPending) {
+        gameState.kidokuExtensionPending = false;
+      }
       if (!p) return;
       if (p.disconnected) {
         gameState.logs.push(`⚠️ <strong>${p.name}</strong> は切断済みのため、この手番をスキップしました。`);
@@ -1104,10 +1108,12 @@
       let roundFinished = false;
 
       // 既読スルー成功は「その人数の基本目標」に到達した時点で発動。
+      // ここで既読スルーは完全に成功済みとなり、親に1ptを与え、
+      // 以後は延長戦（基本目標×2）へ移行する。
       if (gameState.kidokuActivated &&
           gameState.fieldScore >= gameState.baseTargetScore &&
           gameState.targetScore === gameState.baseTargetScore) {
-        gameState.logs.push(`🔥 【既読スルー成功！】親の <strong class="text-amber-300">${gameState.players[gameState.oyaIndex].name}</strong> に 1pt！ゴール${gameState.baseTargetScore * 2}ptへ！`);
+        gameState.logs.push(`🔥 【既読スルー成功！】親の <strong class="text-amber-300">${gameState.players[gameState.oyaIndex].name}</strong> に 1pt！ゴール${gameState.baseTargetScore * 2}ptへ！以降は2pt獲得者を決める延長戦です。`);
         gameState.players[gameState.oyaIndex].score += 1;
         gameState.targetScore = gameState.baseTargetScore * 2;
         gameState.rewardPt = 2;
@@ -1144,12 +1150,17 @@
         }, 500);
       } else {
         setTimeout(async () => {
-          if (gameState.kidokuActivated && gameState.fieldScore < gameState.targetScore) {
-            gameState.logs.push(`❌ 既読スルー失敗！親の <strong class="text-amber-300">${gameState.players[gameState.oyaIndex].name}</strong> 以外の全員に +1pt！`);
-            gameState.players.forEach((player, idx) => {
-              if (!player.disconnected && idx !== gameState.oyaIndex) player.score += 1;
+          // 既読スルー成功後は、以降の延長戦に罰則はありません。
+          // 基本目標の時点で成功済みなので、延長戦では2ptを誰が取るかだけを競います。
+          // 目標未達でもラウンド終了せず、そのまま次のターン順を続けます。
+          if (gameState.kidokuActivated && gameState.targetScore > gameState.baseTargetScore) {
+            gameState.players.forEach(player => {
+              if (!player.disconnected) {
+                player.plottedCard = null;
+                player.plottedCardTemp = null;
+              }
             });
-            gameState.phase = 'ROUND_END';
+            gameState.phase = 'PLOT';
           } else {
             gameState.players.forEach(player => {
               if (!player.disconnected) {
