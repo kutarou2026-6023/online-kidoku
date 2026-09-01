@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット (オンライン対戦版 v1.5.0)</title>
+  <title>既読スルー・プロット (オンライン対戦版 v1.5.3)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -46,9 +46,9 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.5.0</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.5.3</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
-          ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / 4
+          ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
       </div>
     </header>
@@ -65,7 +65,7 @@
         <p class="text-xs text-slate-500 mt-1 font-bold">友達とルームIDを共有して遊ぼう！</p>
         <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
           <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-          <span class="text-xs text-indigo-600 font-black">1.5.0</span>
+          <span class="text-xs text-indigo-600 font-black">1.5.3</span>
         </div>
       </div>
 
@@ -101,7 +101,7 @@
       <div class="text-center mb-5">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.5.0</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.5.3</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -128,7 +128,7 @@
             <option value="3">3人</option>
             <option value="4" selected>4人</option>
           </select>
-          <p class="text-[10px] text-slate-400 font-bold mt-2 leading-relaxed">人数が多いほど目標点を高くします。4人戦の10ptを基準に、2人=5pt・3人=8pt・4人=10ptです。</p>
+          <p class="text-[10px] text-slate-400 font-bold mt-2 leading-relaxed">人数に応じて目標点を調整します。4人戦の10ptを基準に、2人=8pt・3人=9pt・4人=10ptです。ラウンド数は2人=4R・3人=3R・4人=4Rです。</p>
         </div>
 
         <button id="btn-start-game" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition text-lg disabled:opacity-50 flex justify-center items-center">
@@ -292,12 +292,17 @@
     let disconnectCheckTimer = null;
     const HEARTBEAT_MS = 5000;
     const DISCONNECT_TIMEOUT_MS = 20000;
-    const GAME_VERSION = '1.5.0';
-    const PLAYER_TARGETS = { 2: 5, 3: 8, 4: 10 };
+    const GAME_VERSION = '1.5.3';
+    const PLAYER_TARGETS = { 2: 8, 3: 9, 4: 10 };
+    const PLAYER_ROUND_LIMITS = { 2: 4, 3: 3, 4: 4 };
     let hostWatchTimer = null;
 
     function getBaseTargetScore(playerCount) {
       return PLAYER_TARGETS[playerCount] || 10;
+    }
+
+    function getRoundLimit(playerCount) {
+      return PLAYER_ROUND_LIMITS[playerCount] || 4;
     }
 
     function getActivePlayers(state) {
@@ -326,6 +331,27 @@
 
     function normalizePlayers(players) {
       return players.map((p, idx) => ({ ...p, id: idx }));
+    }
+
+    // 初回ラウンドの親を左端に固定し、その後は同じ表示順を維持する。
+    function getDisplayOrder(state) {
+      const players = state.players || [];
+      const order = Array.isArray(state.displayOrder) ? state.displayOrder.slice() : players.map(p => p.id);
+      const seen = new Set(order);
+      players.forEach(p => { if (!seen.has(p.id)) order.push(p.id); });
+      return order;
+    }
+
+    function ensureDisplayOrder(state) {
+      const order = getDisplayOrder(state);
+      state.displayOrder = order;
+      return order;
+    }
+
+    function orderPlayersForDisplay(state) {
+      const order = ensureDisplayOrder(state);
+      const map = new Map((state.players || []).map(p => [p.id, p]));
+      return order.map(id => map.get(id)).filter(Boolean);
     }
 
     function updatePlayerCountPreview() {
@@ -362,6 +388,7 @@
         try {
           await updateDoc(getRoomRef(currentRoomId), {
             playerCount: nextCount,
+            roundLimit: getRoundLimit(nextCount),
             baseTargetScore: getBaseTargetScore(nextCount),
             targetScore: getBaseTargetScore(nextCount)
           });
@@ -457,9 +484,10 @@
         
         const initialGameState = {
           roomId, hostId: currentUser.uid, status: 'WAITING', round: 1, oyaIndex: 0,
-          playerCount: 4, baseTargetScore: 10, fieldScore: 0, targetScore: 10, rewardPt: 1, kidokuActivated: false,
+          playerCount: 4, roundLimit: 4, baseTargetScore: 10, fieldScore: 0, targetScore: 10, rewardPt: 1, kidokuActivated: false,
           skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
           logs: [],
+          displayOrder: [0],
           players: [{ id: 0, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, lastSeen: Date.now(), disconnected: false }]
         };
 
@@ -498,7 +526,9 @@
               ...data.players.filter(p => !p.disconnected),
               { uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, lastSeen: Date.now(), disconnected: false }
             ]);
-            await updateDoc(getRoomRef(roomId), { players: nextPlayers });
+            const displayOrder = Array.isArray(data.displayOrder) ? data.displayOrder.slice() : nextPlayers.map(p => p.id);
+            if (!displayOrder.includes(nextPlayers[nextPlayers.length - 1].id)) displayOrder.push(nextPlayers[nextPlayers.length - 1].id);
+            await updateDoc(getRoomRef(roomId), { players: nextPlayers, displayOrder });
           }
           currentRoomId = roomId;
           listenRoom(roomId);
@@ -760,7 +790,13 @@
       try {
         gameState.oyaIndex = Math.floor(Math.random() * playerCount);
         gameState.status = 'PLAYING';
+        gameState.roundLimit = getRoundLimit(playerCount);
         gameState.baseTargetScore = getBaseTargetScore(playerCount);
+        const parentId = gameState.oyaIndex;
+        const orderedIds = gameState.players
+          .filter(p => !p.disconnected)
+          .map(p => p.id);
+        gameState.displayOrder = [parentId, ...orderedIds.filter(id => id !== parentId)];
         setupRoundState();
         await updateDoc(getRoomRef(currentRoomId), gameState);
       } catch (error) {
@@ -776,9 +812,11 @@
     function setupRoundState() {
       const playerCount = Number(gameState.playerCount || gameState.players.length || 4);
       const baseTarget = getBaseTargetScore(playerCount);
+      const roundLimit = getRoundLimit(playerCount);
 
       gameState.fieldScore = 0;
       gameState.baseTargetScore = baseTarget;
+      gameState.roundLimit = roundLimit;
       gameState.targetScore = baseTarget;
       gameState.rewardPt = 1;
       gameState.kidokuActivated = false;
@@ -795,7 +833,7 @@
         p.plottedCardTemp = null;
       });
 
-      gameState.logs.push(`--- 🔔 第 ${gameState.round} ラウンド開始 (親: ${gameState.players[gameState.oyaIndex].name} / ${playerCount}人戦・目標${baseTarget}pt) ---`);
+      gameState.logs.push(`--- 🔔 第 ${gameState.round} ラウンド開始 (親: ${gameState.players[gameState.oyaIndex].name} / ${playerCount}人戦・目標${baseTarget}pt・全${roundLimit}R) ---`);
       selectedHandIndex = null;
     }
 
@@ -803,8 +841,7 @@
     function initGameDOM() {
       const pGrid = document.getElementById('players-grid');
       pGrid.innerHTML = '';
-      const activePlayers = gameState.players.filter(p => !p.disconnected);
-      const myPlayerId = gameState.players.find(p => p.uid === currentUser.uid)?.id ?? 0;
+      const activePlayers = orderPlayersForDisplay(gameState).filter(p => !p.disconnected);
       const gridClass = activePlayers.length === 2 ? 'grid-cols-2' : activePlayers.length === 3 ? 'grid-cols-3' : 'grid-cols-4';
       pGrid.className = `grid ${gridClass} gap-2`;
 
@@ -814,6 +851,7 @@
         container.className = "flex flex-col space-y-1.5";
         container.innerHTML = `
           <div id="player-card-${pIdx}" class="p-2 rounded-xl text-center border transition-all bg-white border-slate-200">
+            <div id="player-badge-${pIdx}" class="h-4 mb-0.5 flex items-center justify-center gap-1"></div>
             <div class="text-xs font-extrabold truncate flex items-center justify-center space-x-1">
               <span id="player-name-${pIdx}" class="truncate"></span>
               <span id="player-oya-${pIdx}" class="text-amber-500 font-bold text-[10px] hidden" title="親">👑</span>
@@ -842,6 +880,7 @@
       if (!isUIInitialized) initGameDOM();
 
       document.getElementById('round-num').innerText = gameState.round;
+      document.getElementById('round-total').innerText = gameState.roundLimit || getRoundLimit(gameState.playerCount || gameState.players.length || 4);
       document.getElementById('field-score').innerText = gameState.fieldScore;
       document.getElementById('target-score').innerText = gameState.targetScore;
       document.getElementById('reward-pt').innerText = gameState.rewardPt;
@@ -858,7 +897,7 @@
       else { pBadge.innerText = 'オープン＆集計中'; pBadge.className = 'text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-bold animate-pulse'; }
 
       // プレイヤー情報とカードアニメーション
-      gameState.players.forEach(p => {
+      orderPlayersForDisplay(gameState).forEach(p => {
         if (p.disconnected) return;
         const pIdx = p.id;
         const nameEl = document.getElementById(`player-name-${pIdx}`);
@@ -866,6 +905,11 @@
         if (!nameEl || !scoreEl) return;
         nameEl.innerText = p.name;
         document.getElementById(`player-score-${pIdx}`).innerText = p.score;
+        const badgeEl = document.getElementById(`player-badge-${pIdx}`);
+        const badges = [];
+        if (p.uid === gameState.hostId) badges.push('<span class="text-[9px] bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-full font-black">HOST</span>');
+        if (p.uid === currentUser.uid) badges.push('<span class="text-[9px] bg-indigo-100 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded-full font-black">YOU</span>');
+        badgeEl.innerHTML = badges.join('');
         
         const oyaIcon = document.getElementById(`player-oya-${pIdx}`);
         if (gameState.oyaIndex === pIdx) oyaIcon.classList.remove('hidden'); else oyaIcon.classList.add('hidden');
@@ -1136,7 +1180,8 @@
       const waitMsg = document.getElementById('modal-waiting-msg');
       if (gameState.hostId === currentUser.uid) {
         nextBtn.classList.remove('hidden'); waitMsg.classList.add('hidden');
-        nextBtn.innerHTML = gameState.round >= 4 ? '<span id="text-modal-next">最終結果を見る</span><i id="spinner-modal-next" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>' : `<span id="text-modal-next">第 ${gameState.round + 1} ラウンドへ</span><i id="spinner-modal-next" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>`;
+        const roundLimit = gameState.roundLimit || getRoundLimit(gameState.playerCount || gameState.players.length || 4);
+        nextBtn.innerHTML = gameState.round >= roundLimit ? '<span id="text-modal-next">最終結果を見る</span><i id="spinner-modal-next" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>' : `<span id="text-modal-next">第 ${gameState.round + 1} ラウンドへ</span><i id="spinner-modal-next" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>`;
       } else {
         nextBtn.classList.add('hidden'); waitMsg.classList.remove('hidden');
       }
@@ -1148,7 +1193,8 @@
       
       setBtnLoading('modal-next', true);
       try {
-        if (gameState.round >= 4) {
+        const roundLimit = gameState.roundLimit || getRoundLimit(gameState.playerCount || gameState.players.length || 4);
+        if (gameState.round >= roundLimit) {
           await updateDoc(getRoomRef(currentRoomId), { status: 'FINISHED' });
           alert('ゲーム終了！ロビーに戻ります。'); location.reload();
         } else {
