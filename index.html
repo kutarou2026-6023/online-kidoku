@@ -226,7 +226,7 @@
     import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // ============================================================================
-    // 【重要】 Firebaseの設定オブジェクト（重複定義を修正）
+    // 【重要】 Vercelなどで公開する場合は、ご自身のFirebaseの設定に書き換えてください。
     // ============================================================================
     const myFirebaseConfig = {
       apiKey: "AIzaSyC2DBLQGSUQX0XD6sURW3C6TqsK34zwaW4",
@@ -236,7 +236,8 @@
       messagingSenderId: "1063570245036",
       appId: "1:1063570245036:web:39796c3f5f8e4460452609",
       measurementId: "G-2SNWGX4FC3"
-    };
+    }; 
+    // ============================================================================
 
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : myFirebaseConfig;
     let app, auth, db;
