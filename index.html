@@ -75,7 +75,7 @@
       </div>
 
       <div class="space-y-3 pt-2">
-        <button id="btn-create-room" disabled class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all text-lg disabled:opacity-50 flex items-center justify-center">
+        <button id="btn-create-room" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all text-lg disabled:opacity-50 flex items-center justify-center">
           <span id="text-create-room">部屋を作る</span>
           <i id="spinner-create-room" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
         </button>
@@ -89,7 +89,7 @@
 
       <div class="space-y-3">
         <input type="text" id="room-id-input" placeholder="ルームID (5桁)" maxlength="5" class="w-full p-4 border-2 border-slate-200 rounded-2xl font-black tracking-widest text-2xl text-center text-slate-700 focus:border-emerald-400 focus:outline-none transition shadow-sm">
-        <button id="btn-join-room" disabled class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-95 transition-all text-lg disabled:opacity-50 flex items-center justify-center">
+        <button id="btn-join-room" class="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black shadow-lg shadow-emerald-500/30 hover:bg-emerald-600 active:scale-95 transition-all text-lg disabled:opacity-50 flex items-center justify-center">
           <span id="text-join-room">部屋に参加する</span>
           <i id="spinner-join-room" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
         </button>
@@ -346,6 +346,32 @@
 
     updatePlayerCountPreview();
 
+    const playerCountSelect = document.getElementById('player-count-select');
+    if (playerCountSelect) {
+      playerCountSelect.addEventListener('change', async () => {
+        updatePlayerCountPreview();
+        if (!currentUser || !currentRoomId || !gameState || gameState.hostId !== currentUser.uid || gameState.status !== 'WAITING') return;
+        const nextCount = Number(playerCountSelect.value);
+        if (nextCount < gameState.players.length) {
+          // 現在の参加人数より少ない設定にはできない。
+          playerCountSelect.value = String(gameState.playerCount || gameState.players.length);
+          updatePlayerCountPreview();
+          alert(`現在${gameState.players.length}人参加しています。人数を減らす場合は先に参加者を退室させてください。`);
+          return;
+        }
+        try {
+          await updateDoc(getRoomRef(currentRoomId), {
+            playerCount: nextCount,
+            baseTargetScore: getBaseTargetScore(nextCount),
+            targetScore: getBaseTargetScore(nextCount)
+          });
+        } catch (e) {
+          console.error('対戦人数の変更に失敗:', e);
+          alert('対戦人数の変更に失敗しました。\n' + e.message);
+        }
+      });
+    }
+
     // --- Auth Setup ---
     async function initAuth() {
       if (!isFirebaseReady) return;
@@ -361,15 +387,24 @@
       }
     }
     
+    // 認証状態にかかわらずボタン自体は押せるようにしておき、
+    // 認証がまだ完了していない場合は各ボタン側で分かりやすく案内する。
+    // （認証待ちのまま「部屋を作る」が永遠に押せない状態を防止）
     if (isFirebaseReady) {
       onAuthStateChanged(auth, user => {
         currentUser = user;
-        if (user) {
-          document.getElementById('btn-create-room').disabled = false;
-          document.getElementById('btn-join-room').disabled = false;
-        }
+        const createBtn = document.getElementById('btn-create-room');
+        const joinBtn = document.getElementById('btn-join-room');
+        if (createBtn) createBtn.disabled = false;
+        if (joinBtn) joinBtn.disabled = false;
       });
       initAuth();
+    } else {
+      // Firebase初期化に失敗しても、エラーメッセージを確認できるようにする。
+      const createBtn = document.getElementById('btn-create-room');
+      const joinBtn = document.getElementById('btn-join-room');
+      if (createBtn) createBtn.disabled = false;
+      if (joinBtn) joinBtn.disabled = false;
     }
 
     function getRoomRef(roomId) {
@@ -709,7 +744,11 @@
           opt.disabled = Number(opt.value) < gameState.players.length;
         });
 
-        document.getElementById('btn-start-game').addEventListener('click', async () => {
+        // 待機室のリアルタイム更新のたびにクリックイベントを重複登録しない。
+        const startBtn = document.getElementById('btn-start-game');
+        if (!startBtn.dataset.bound) {
+          startBtn.dataset.bound = '1';
+          startBtn.addEventListener('click', async () => {
       if (gameState.hostId !== currentUser.uid) return;
       const playerCount = Number(gameState.playerCount || 4);
       if (gameState.players.length !== playerCount || playerCount < 2 || playerCount > 4) {
@@ -729,7 +768,10 @@
       } finally {
         setBtnLoading('btn-start-game', false);
       }
-    });
+          });
+        }
+      }
+    }
 
     function setupRoundState() {
       const playerCount = Number(gameState.playerCount || gameState.players.length || 4);
