@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット (オンライン対戦版 v1.5.5)</title>
+  <title>既読スルー・プロット (オンライン対戦版 v1.5.8)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -46,7 +46,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.5.5</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.5.8</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -65,7 +65,7 @@
         <p class="text-xs text-slate-500 mt-1 font-bold">友達とルームIDを共有して遊ぼう！</p>
         <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
           <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-          <span class="text-xs text-indigo-600 font-black">1.5.5</span>
+          <span class="text-xs text-indigo-600 font-black">1.5.6</span>
         </div>
       </div>
 
@@ -94,6 +94,11 @@
           <i id="spinner-join-room" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
         </button>
       </div>
+
+      <button id="btn-show-rules" class="w-full py-3 bg-white text-indigo-700 border-2 border-indigo-100 rounded-2xl font-black shadow-sm hover:bg-indigo-50 active:scale-[0.98] transition flex items-center justify-center gap-2">
+        <i class="fa-solid fa-book-open"></i>
+        <span>ルール・特殊カード説明</span>
+      </button>
     </div>
 
     <!-- 2. 待機室画面 -->
@@ -101,7 +106,7 @@
       <div class="text-center mb-5">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.5.5</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.5.8</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -123,7 +128,7 @@
             <label for="player-count-select" class="text-sm font-black text-slate-700"><i class="fa-solid fa-sliders mr-1 text-indigo-500"></i>対戦人数</label>
             <span id="target-score-preview" class="text-xs font-black text-emerald-600">目標 10pt</span>
           </div>
-          <select id="player-count-select" class="w-full p-3 border-2 border-indigo-100 rounded-xl font-black text-slate-700 bg-white focus:border-indigo-400 focus:outline-none">
+          <select id="player-count-select" disabled class="w-full p-3 border-2 border-indigo-100 rounded-xl font-black text-slate-700 bg-white focus:border-indigo-400 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed">
             <option value="2">2人</option>
             <option value="3">3人</option>
             <option value="4" selected>4人</option>
@@ -131,7 +136,33 @@
           <p class="text-[10px] text-slate-400 font-bold mt-2 leading-relaxed">人数に応じて目標点を調整します。4人戦の10ptを基準に、2人=8pt・3人=9pt・4人=10ptです。ラウンド数は2人=4R・3人=3R・4人=4Rです。</p>
         </div>
 
-        <button id="btn-start-game" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition text-lg disabled:opacity-50 flex justify-center items-center">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+          <div class="flex items-center justify-between mb-3 gap-3">
+            <div>
+              <div class="text-sm font-black text-slate-700"><i class="fa-solid fa-wand-magic-sparkles mr-1 text-rose-500"></i>特殊カード設定</div>
+              <p id="special-cards-setting-note" class="text-[10px] text-slate-400 font-bold mt-1 leading-relaxed">すべて使用：通知オフ・未読スルー・既読スルー・送信取消・ブロックを使用します。</p>
+            </div>
+          </div>
+          <div id="special-cards-mode-control" class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <button type="button" data-special-mode="none" class="special-mode-btn px-2 py-2.5 rounded-xl border-2 font-black text-[10px] transition-all">
+              <span class="block">全部なし</span><span class="text-[9px] font-bold opacity-70">数字のみ</span>
+            </button>
+            <button type="button" data-special-mode="kidoku" class="special-mode-btn px-2 py-2.5 rounded-xl border-2 font-black text-[10px] transition-all">
+              <span class="block">既読スルーのみ</span><span class="text-[9px] font-bold opacity-70">1種</span>
+            </button>
+            <button type="button" data-special-mode="basic3" class="special-mode-btn px-2 py-2.5 rounded-xl border-2 font-black text-[10px] transition-all">
+              <span class="block">3種使用</span><span class="text-[9px] font-bold opacity-70">既読・未読・通知</span>
+            </button>
+            <button type="button" data-special-mode="all" class="special-mode-btn px-2 py-2.5 rounded-xl border-2 font-black text-[10px] transition-all">
+              <span class="block">全て使用</span><span class="text-[9px] font-bold opacity-70">5種</span>
+            </button>
+          </div>
+          <div id="special-cards-lock-message" class="mt-3 text-[10px] font-black text-slate-400 hidden">
+            <i class="fa-solid fa-lock mr-1"></i>特殊カード設定はホストのみ変更できます。ゲーム開始後は変更できません。
+          </div>
+        </div>
+
+        <button id="btn-start-game" disabled class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition text-lg disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center">
           <span id="text-start-game">ゲームを開始する</span>
           <i id="spinner-start-game" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
         </button>
@@ -139,7 +170,7 @@
 
       <div id="guest-waiting-msg" class="hidden mt-6 bg-slate-100 rounded-xl p-4 text-center border border-slate-200">
         <div class="animate-spin inline-block w-6 h-6 border-[3px] border-indigo-200 border-t-indigo-600 rounded-full mb-2"></div>
-        <p class="text-sm font-bold text-slate-500">ホストが対戦人数を決めて<br>ゲームを開始するのを待っています...</p>
+        <p class="text-sm font-bold text-slate-500">ホストが部屋の設定を決めて<br>ゲームを開始するのを待っています...</p>
       </div>
     </div>
 
@@ -218,6 +249,83 @@
 
   </div>
 
+  <!-- ルール説明モーダル -->
+  <div id="rules-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full max-h-[88vh] overflow-hidden shadow-2xl border border-slate-100 flex flex-col">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
+        <div>
+          <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.5.8</p>
+        </div>
+        <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
+      </div>
+
+      <div class="overflow-y-auto p-5 space-y-5 text-sm text-slate-700">
+        <section>
+          <h3 class="text-sm font-black text-indigo-700 mb-2">🎯 基本ルール</h3>
+          <div class="bg-slate-50 rounded-2xl border border-slate-200 p-3 space-y-2 leading-relaxed">
+            <p>・各ラウンドの<strong>場の合計点</strong>を、目標点ぴったりにするか、目標を超えたときの勝者条件を狙います。</p>
+            <p>・全員がカードを1枚提出すると、親から順番にカードを公開して効果を解決します。</p>
+            <p>・数字カードは場の合計を増やします。<strong>+1 / +2 / +3</strong>があります。</p>
+            <p>・目標点ぴったりなら、そのカードを出したプレイヤーがそのラウンドの報酬点を獲得します。</p>
+            <p>・目標点を超えた場合は、<strong>直前のプレイヤー</strong>がそのラウンドの報酬点を獲得します。</p>
+            <p>・数字カードを出したプレイヤーは、公開後に<strong>+1～+3の数字カードを1枚補充</strong>します。</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-sm font-black text-indigo-700 mb-2">👥 人数ごとの設定</h3>
+          <div class="grid grid-cols-3 gap-2">
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-center"><div class="text-xs text-slate-500 font-bold">2人戦</div><div class="text-lg font-black text-indigo-700">8pt</div><div class="text-[10px] text-slate-500 font-bold">4ラウンド</div></div>
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-center"><div class="text-xs text-slate-500 font-bold">3人戦</div><div class="text-lg font-black text-indigo-700">9pt</div><div class="text-[10px] text-slate-500 font-bold">3ラウンド</div></div>
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-center"><div class="text-xs text-slate-500 font-bold">4人戦</div><div class="text-lg font-black text-indigo-700">10pt</div><div class="text-[10px] text-slate-500 font-bold">4ラウンド</div></div>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-sm font-black text-rose-600 mb-2">🔥 既読スルー</h3>
+          <div class="bg-rose-50 rounded-2xl border border-rose-100 p-3 leading-relaxed space-y-2">
+            <p>・<strong>親だけ</strong>が有効に使える特殊カードです。</p>
+            <p>・既読スルーを宣言した後、基本目標点に到達すると<strong>既読スルー成功</strong>。親が1ptを獲得し、目標が<strong>基本目標の2倍</strong>、報酬が<strong>2pt</strong>になります。</p>
+            <p>・成功後は罰則はありません。以降は<strong>2ptを誰が獲得するか</strong>を競う延長戦です。</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-sm font-black text-indigo-700 mb-2">⚙️ 特殊カード設定</h3>
+          <div class="bg-indigo-50 rounded-2xl border border-indigo-100 p-3 leading-relaxed text-xs space-y-1.5">
+            <p>待機室ではホストが使用する特殊カードの範囲を4段階から選べます。</p>
+            <p>・<strong>全部なし</strong>：特殊カードを使用しません。</p>
+            <p>・<strong>既読スルーのみ</strong>：既読スルーだけ使用します。</p>
+            <p>・<strong>既読スルー・未読スルー・通知オフのみ</strong>：この3種を使用します。</p>
+            <p>・<strong>全て使用</strong>：5種すべてを使用します。</p>
+            <p>設定は部屋全体に適用され、ゲーム開始後は変更できません。ラウンドが変わっても、手札は前ラウンド終了時の状態をそのまま引き継ぎます。</p>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-sm font-black text-amber-700 mb-2">🃏 特殊カード</h3>
+          <div class="space-y-2">
+            <div class="bg-amber-50 border border-amber-100 rounded-xl p-3"><div class="font-black text-amber-700">通知オフ</div><div class="text-xs leading-relaxed mt-1">次に公開されるプレイヤーのカードを<strong>無効化（+0）</strong>します。</div></div>
+            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3"><div class="font-black text-emerald-700">未読スルー</div><div class="text-xs leading-relaxed mt-1">次回に<strong>パス権</strong>を獲得します。パスは場の合計を増やさずに手番を処理できます。</div></div>
+            <div class="bg-rose-50 border border-rose-100 rounded-xl p-3"><div class="font-black text-rose-700">既読スルー</div><div class="text-xs leading-relaxed mt-1">親が使うと<strong>既読スルー状態</strong>が発動し、基本目標到達で1pt＋延長戦に入ります。</div></div>
+            <div class="bg-purple-50 border border-purple-100 rounded-xl p-3"><div class="font-black text-purple-700">送信取消</div><div class="text-xs leading-relaxed mt-1">直前の数字カードによる増加分を取り消し、その分だけ場の合計を戻します。</div></div>
+            <div class="bg-slate-100 border border-slate-200 rounded-xl p-3"><div class="font-black text-slate-700">ブロック</div><div class="text-xs leading-relaxed mt-1">次のプレイヤーを<strong>強制的にスキップ</strong>します。</div></div>
+          </div>
+        </section>
+
+        <section>
+          <h3 class="text-sm font-black text-indigo-700 mb-2">⏩ パス</h3>
+          <div class="bg-slate-50 rounded-2xl border border-slate-200 p-3 leading-relaxed text-xs">未読スルーで得たパス権を使うと、その手番の場の合計は<strong>+0</strong>です。</div>
+        </section>
+      </div>
+
+      <div class="p-4 border-t border-slate-100 bg-white">
+        <button id="btn-close-rules-bottom" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black">閉じる</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ゲーム結果・ラウンドモーダル -->
   <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border border-slate-100 transform transition-all scale-95">
@@ -292,7 +400,7 @@
     let disconnectCheckTimer = null;
     const HEARTBEAT_MS = 5000;
     const DISCONNECT_TIMEOUT_MS = 20000;
-    const GAME_VERSION = '1.5.5';
+    const GAME_VERSION = '1.5.6';
     const PLAYER_TARGETS = { 2: 8, 3: 9, 4: 10 };
     const PLAYER_ROUND_LIMITS = { 2: 4, 3: 3, 4: 4 };
     let hostWatchTimer = null;
@@ -364,6 +472,24 @@
     
 
     const CARDS = { NUM: ['+1', '+2', '+3'], SPECIAL: ['通知オフ', '未読スルー', '既読スルー', '送信取消', 'ブロック'] };
+    const SPECIAL_CARD_MODE_INFO = {
+      none:   { label: '全部なし', note: '数字カードのみで遊びます。特殊カードは手札に入りません。', cards: [] },
+      kidoku: { label: '既読スルーのみ', note: '既読スルーだけを使用します。', cards: ['既読スルー'] },
+      basic3: { label: '既読スルー・未読スルー・通知オフのみ使用', note: '既読スルー・未読スルー・通知オフの3種を使用します。', cards: ['既読スルー', '未読スルー', '通知オフ'] },
+      all:    { label: '全て使用', note: '5種すべての特殊カードを使用します。', cards: CARDS.SPECIAL.slice() }
+    };
+
+    function normalizeSpecialCardMode(state) {
+      if (state && ['none','kidoku','basic3','all'].includes(state.specialCardMode)) return state.specialCardMode;
+      // v1.5.7以前の部屋との互換：false=全部なし、true=全て使用
+      return state?.specialCardsEnabled === false ? 'none' : 'all';
+    }
+
+    function getInitialHand(specialCardMode = 'all') {
+      const mode = SPECIAL_CARD_MODE_INFO[specialCardMode] ? specialCardMode : 'all';
+      return ['+1','+1','+2','+2','+3','+3', ...SPECIAL_CARD_MODE_INFO[mode].cards];
+    }
+
     const CARD_COLORS = {
       '+1': 'bg-blue-50 text-blue-600 border-blue-300', '+2': 'bg-sky-50 text-sky-600 border-sky-300', '+3': 'bg-indigo-50 text-indigo-600 border-indigo-300',
       '通知オフ': 'bg-amber-50 text-amber-700 border-amber-300', '未読スルー': 'bg-emerald-50 text-emerald-700 border-emerald-300',
@@ -373,13 +499,54 @@
     updatePlayerCountPreview();
 
     const playerCountSelect = document.getElementById('player-count-select');
+    const specialModeButtons = [...document.querySelectorAll('.special-mode-btn')];
+
+    function updateSpecialCardsModeUI(mode, { isHost = false, showLock = false } = {}) {
+      const normalizedMode = SPECIAL_CARD_MODE_INFO[mode] ? mode : 'all';
+      const note = document.getElementById('special-cards-setting-note');
+      const lock = document.getElementById('special-cards-lock-message');
+
+      specialModeButtons.forEach(btn => {
+        const active = btn.dataset.specialMode === normalizedMode;
+        btn.disabled = !isHost;
+        btn.classList.toggle('bg-indigo-600', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('border-indigo-600', active);
+        btn.classList.toggle('shadow-md', active);
+        btn.classList.toggle('bg-white', !active);
+        btn.classList.toggle('text-slate-600', !active);
+        btn.classList.toggle('border-slate-200', !active);
+        btn.classList.toggle('opacity-50', !isHost);
+        btn.classList.toggle('cursor-not-allowed', !isHost);
+      });
+
+      if (note) note.innerText = SPECIAL_CARD_MODE_INFO[normalizedMode].note;
+      if (lock) lock.classList.toggle('hidden', !showLock);
+    }
+
+    function updateHostControlInteractivity() {
+      const isHost = !!(currentUser && gameState && gameState.hostId === currentUser.uid && gameState.status === 'WAITING');
+      const select = document.getElementById('player-count-select');
+      const startBtn = document.getElementById('btn-start-game');
+      if (select) select.disabled = !isHost;
+      if (startBtn) startBtn.disabled = !isHost;
+      updateSpecialCardsModeUI(normalizeSpecialCardMode(gameState), { isHost, showLock: !!(gameState && gameState.status === 'WAITING' && !isHost) });
+    }
+
+    updatePlayerCountPreview();
+    updateSpecialCardsModeUI('all', { isHost: false, showLock: true });
+    updateHostControlInteractivity();
+
     if (playerCountSelect) {
       playerCountSelect.addEventListener('change', async () => {
         updatePlayerCountPreview();
-        if (!currentUser || !currentRoomId || !gameState || gameState.hostId !== currentUser.uid || gameState.status !== 'WAITING') return;
+        if (!currentUser || !currentRoomId || !gameState || gameState.hostId !== currentUser.uid || gameState.status !== 'WAITING') {
+          playerCountSelect.value = String(gameState?.playerCount || 4);
+          updatePlayerCountPreview();
+          return;
+        }
         const nextCount = Number(playerCountSelect.value);
         if (nextCount < gameState.players.length) {
-          // 現在の参加人数より少ない設定にはできない。
           playerCountSelect.value = String(gameState.playerCount || gameState.players.length);
           updatePlayerCountPreview();
           alert(`現在${gameState.players.length}人参加しています。人数を減らす場合は先に参加者を退室させてください。`);
@@ -394,10 +561,30 @@
           });
         } catch (e) {
           console.error('対戦人数の変更に失敗:', e);
+          playerCountSelect.value = String(gameState.playerCount || 4);
+          updatePlayerCountPreview();
           alert('対戦人数の変更に失敗しました。\n' + e.message);
         }
       });
     }
+
+    specialModeButtons.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!currentUser || !currentRoomId || !gameState || gameState.hostId !== currentUser.uid || gameState.status !== 'WAITING') {
+          updateSpecialCardsModeUI(normalizeSpecialCardMode(gameState), { isHost: false, showLock: true });
+          return;
+        }
+        const mode = btn.dataset.specialMode;
+        if (!SPECIAL_CARD_MODE_INFO[mode]) return;
+        try {
+          await updateDoc(getRoomRef(currentRoomId), { specialCardMode: mode, specialCardsEnabled: mode !== 'none' });
+        } catch (e) {
+          console.error('特殊カード設定の変更に失敗:', e);
+          updateSpecialCardsModeUI(normalizeSpecialCardMode(gameState), { isHost: true, showLock: false });
+          alert('特殊カード設定の変更に失敗しました。\n' + e.message);
+        }
+      });
+    });
 
     // --- Auth Setup ---
     async function initAuth() {
@@ -472,6 +659,31 @@
       }
     }
 
+    // --- ルール説明 ---
+    const rulesModal = document.getElementById('rules-modal');
+    const openRulesButton = document.getElementById('btn-show-rules');
+    const closeRulesButton = document.getElementById('btn-close-rules');
+    const closeRulesBottomButton = document.getElementById('btn-close-rules-bottom');
+
+    function openRulesModal() {
+      if (!rulesModal) return;
+      rulesModal.classList.remove('hidden');
+      rulesModal.classList.add('flex');
+    }
+
+    function closeRulesModal() {
+      if (!rulesModal) return;
+      rulesModal.classList.add('hidden');
+      rulesModal.classList.remove('flex');
+    }
+
+    openRulesButton?.addEventListener('click', openRulesModal);
+    closeRulesButton?.addEventListener('click', closeRulesModal);
+    closeRulesBottomButton?.addEventListener('click', closeRulesModal);
+    rulesModal?.addEventListener('click', (event) => {
+      if (event.target === rulesModal) closeRulesModal();
+    });
+
     // --- Lobby Functions ---
     document.getElementById('btn-create-room').addEventListener('click', async () => {
       if (!currentUser) { alert("認証が完了していません。Firebaseの設定を確認してください。"); return; }
@@ -485,6 +697,7 @@
         const initialGameState = {
           roomId, hostId: currentUser.uid, status: 'WAITING', round: 1, oyaIndex: 0,
           playerCount: 4, roundLimit: 4, baseTargetScore: 10, fieldScore: 0, targetScore: 10, rewardPt: 1, kidokuActivated: false,
+          specialCardsEnabled: true, specialCardMode: 'all',
           skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
           logs: [],
           displayOrder: [0],
@@ -766,13 +979,17 @@
           </div>`;
       });
 
-      if (gameState.hostId === currentUser.uid) {
-        document.getElementById('host-controls').classList.remove('hidden');
-        document.getElementById('guest-waiting-msg').classList.add('hidden');
+      const isHostWaiting = gameState.hostId === currentUser.uid;
+      document.getElementById('host-controls').classList.remove('hidden');
+      document.getElementById('guest-waiting-msg').classList.toggle('hidden', isHostWaiting);
+      updateSpecialCardsModeUI(normalizeSpecialCardMode(gameState), { isHost: isHostWaiting, showLock: !isHostWaiting });
+      updateHostControlInteractivity();
 
-        [...select.options].forEach(opt => {
-          opt.disabled = Number(opt.value) < gameState.players.length;
-        });
+      [...select.options].forEach(opt => {
+        opt.disabled = !isHostWaiting || Number(opt.value) < gameState.players.length;
+      });
+
+      if (isHostWaiting) {
 
         // 待機室のリアルタイム更新のたびにクリックイベントを重複登録しない。
         const startBtn = document.getElementById('btn-start-game');
@@ -828,7 +1045,14 @@
       gameState.roundTurnOrder = getTurnOrder(gameState);
 
       gameState.players.forEach((p) => {
-        p.hand = ['+1','+1','+2','+2','+3','+3', '通知オフ','未読スルー','既読スルー','送信取消','ブロック'];
+        // 初回ゲーム開始時だけ初期手札を配布し、次ラウンド以降は前ラウンドの手札をそのまま引き継ぐ。
+        if (!Array.isArray(p.hand) || p.hand.length === 0) {
+          p.hand = getInitialHand(normalizeSpecialCardMode(gameState));
+        } else if (gameState.status === 'PLAYING' && !gameState.roundTurnOrder) {
+          // 既存部屋からの復帰時などに、設定に含まれない特殊カードだけを除外。
+          const allowedSpecial = new Set(SPECIAL_CARD_MODE_INFO[normalizeSpecialCardMode(gameState)].cards);
+          p.hand = p.hand.filter(card => !CARDS.SPECIAL.includes(card) || allowedSpecial.has(card));
+        }
         p.passRights = false;
         p.plottedCard = null;
         p.plottedCardTemp = null;
