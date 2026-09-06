@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット (オンライン対戦版 v1.5.9)</title>
+  <title>既読スルー・プロット (オンライン対戦版 v1.6.0)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -46,7 +46,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.5.9</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.6.0</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -65,13 +65,24 @@
         <p class="text-xs text-slate-500 mt-1 font-bold">友達とルームIDを共有して遊ぼう！</p>
         <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
           <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-          <span class="text-xs text-indigo-600 font-black">1.5.9</span>
+          <span class="text-xs text-indigo-600 font-black">1.6.0</span>
         </div>
       </div>
 
       <div class="space-y-2">
         <label class="text-xs font-bold text-slate-500 ml-1">あなたの名前</label>
         <input type="text" id="player-name" placeholder="ゲストプレイヤー" value="プレイヤー" class="w-full p-4 border-2 border-indigo-100 rounded-2xl font-extrabold text-slate-700 focus:border-indigo-400 focus:outline-none transition shadow-sm text-center">
+      </div>
+
+      <div id="account-panel" class="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <div class="text-[10px] text-slate-400 font-black">アカウント</div>
+            <div id="account-status" class="text-xs font-black text-slate-600 truncate">ゲスト（ログインするとランダム対戦でレートを使用できます）</div>
+            <div id="account-rating" class="text-[10px] text-indigo-600 font-black mt-1 hidden">RATE <span>1500</span></div>
+          </div>
+          <button id="btn-account" class="shrink-0 px-3 py-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl text-xs font-black hover:bg-indigo-100">ログイン</button>
+        </div>
       </div>
 
       <div class="space-y-3 pt-2">
@@ -136,7 +147,7 @@
       <div class="text-center mb-5">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.5.9</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.6.0</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -279,13 +290,38 @@
 
   </div>
 
+  <!-- アカウントログインモーダル -->
+  <div id="account-modal" class="fixed inset-0 bg-slate-900/60 z-[70] hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-xl font-black text-indigo-700">アカウント</h2>
+          <p class="text-[10px] text-slate-400 font-bold mt-1">ランダム対戦のレートを保存するために必要です。</p>
+        </div>
+        <button id="btn-close-account" class="w-9 h-9 rounded-full bg-slate-100 text-slate-500 font-black">✕</button>
+      </div>
+      <div id="account-form" class="space-y-3">
+        <input id="account-email" type="email" autocomplete="email" placeholder="メールアドレス" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold focus:border-indigo-400 focus:outline-none">
+        <input id="account-password" type="password" autocomplete="current-password" placeholder="パスワード（6文字以上）" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold focus:border-indigo-400 focus:outline-none">
+        <div id="account-error" class="hidden text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-3"></div>
+        <button id="btn-login" class="w-full py-3.5 bg-indigo-600 text-white rounded-2xl font-black">ログイン</button>
+        <button id="btn-register" class="w-full py-3.5 bg-white text-indigo-700 border-2 border-indigo-100 rounded-2xl font-black">新規登録</button>
+        <p class="text-[10px] text-slate-400 leading-relaxed">※Firebase Authenticationの「メール/パスワード」を有効にすると利用できます。</p>
+      </div>
+      <div id="account-logged-in" class="hidden space-y-3">
+        <div class="bg-indigo-50 rounded-2xl p-3 text-xs font-bold text-indigo-700 whitespace-pre-line" id="account-logged-in-text"></div>
+        <button id="btn-logout" class="w-full py-3.5 bg-white text-rose-600 border-2 border-rose-100 rounded-2xl font-black">ログアウト</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ルール説明モーダル -->
   <div id="rules-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-md w-full max-h-[88vh] overflow-hidden shadow-2xl border border-slate-100 flex flex-col">
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
         <div>
           <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.5.9</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.6.0</p>
         </div>
         <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
       </div>
@@ -357,6 +393,11 @@
         <section>
           <h3 class="text-sm font-black text-indigo-700 mb-2">⏩ パス</h3>
           <div class="bg-slate-50 rounded-2xl border border-slate-200 p-3 leading-relaxed text-xs">未読スルーで得たパス権を使うと、その手番の場の合計は<strong>+0</strong>です。</div>
+          <div class="bg-violet-50 rounded-2xl border border-violet-100 p-3 leading-relaxed text-xs space-y-1.5">
+            <div class="font-black text-violet-700">ランダム対戦とレート</div>
+            <div>ランダム対戦は<strong>ログインが必須</strong>です。初期レートは<strong>1500</strong>。ゴッドフィールドの真剣タイマンを参考に、レート差<strong>200以内</strong>を基本としてマッチングします。</div>
+            <div>2人戦は勝敗に応じてレートが増減し、4人戦は最終順位をもとに各プレイヤー間でレートを計算します。ID対戦にはレート変動はありません。</div>
+          </div>
         </section>
       </div>
 
@@ -389,7 +430,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot, runTransaction, collection, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // ============================================================================
@@ -440,7 +481,13 @@
     let disconnectCheckTimer = null;
     const HEARTBEAT_MS = 5000;
     const DISCONNECT_TIMEOUT_MS = 20000;
-    const GAME_VERSION = '1.5.9';
+    const GAME_VERSION = '1.6.0';
+    const INITIAL_RATING = 1500;
+    const RATING_MATCH_RANGE = 200;
+    const RATING_K_2P = 32;
+    const RATING_K_4P = 16;
+    let currentProfile = null;
+    let accountModal = null;
     const MATCH_MODES = { random2: 2, random4: 4 };
     let matchmakingMode = null;
     let matchmakingQueueUnsubscribe = null;
@@ -631,6 +678,17 @@
       });
     });
 
+    // --- Account UI ---
+    accountModal = document.getElementById('account-modal');
+    document.getElementById('btn-account')?.addEventListener('click', openAccountModal);
+    document.getElementById('btn-close-account')?.addEventListener('click', closeAccountModal);
+    document.getElementById('btn-login')?.addEventListener('click', () => handleEmailAuth('login'));
+    document.getElementById('btn-register')?.addEventListener('click', () => handleEmailAuth('register'));
+    document.getElementById('btn-logout')?.addEventListener('click', async () => {
+      try { await signOut(auth); closeAccountModal(); await initAuth(); } catch (e) { alert('ログアウトに失敗しました。\n' + e.message); }
+    });
+    accountModal?.addEventListener('click', e => { if (e.target === accountModal) closeAccountModal(); });
+
     // --- Auth Setup ---
     async function initAuth() {
       if (!isFirebaseReady) return;
@@ -650,8 +708,10 @@
     // 認証がまだ完了していない場合は各ボタン側で分かりやすく案内する。
     // （認証待ちのまま「部屋を作る」が永遠に押せない状態を防止）
     if (isFirebaseReady) {
-      onAuthStateChanged(auth, user => {
+      onAuthStateChanged(auth, async user => {
         currentUser = user;
+        if (user && !user.isAnonymous) { try { await ensureUserProfile(); } catch (e) { console.warn('プロフィール取得失敗:', e); } } else { currentProfile = null; }
+        updateAccountUI();
         const createBtn = document.getElementById('btn-create-room');
         const joinBtn = document.getElementById('btn-join-room');
         if (createBtn) createBtn.disabled = false;
@@ -670,6 +730,165 @@
     function getRoomRef(roomId) {
       return doc(db, 'artifacts', appId, 'public', 'data', 'kidoku_rooms', roomId);
     }
+
+    function getUserProfileRef(uid) {
+      return doc(db, 'artifacts', appId, 'public', 'data', 'kidoku_users', uid);
+    }
+
+    function isPermanentAccount() {
+      return !!(currentUser && !currentUser.isAnonymous);
+    }
+
+    async function ensureUserProfile() {
+      if (!isPermanentAccount()) return null;
+      const ref = getUserProfileRef(currentUser.uid);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        currentProfile = snap.data();
+        return currentProfile;
+      }
+      const profile = { uid: currentUser.uid, email: currentUser.email || '', rating: INITIAL_RATING, games: 0, wins: 0, losses: 0, draws: 0, createdAt: Date.now(), updatedAt: Date.now() };
+      await setDoc(ref, profile, { merge: true });
+      currentProfile = profile;
+      return profile;
+    }
+
+    function ratingClass(rating) {
+      if (rating >= 2000) return 'GOD';
+      if (rating >= 1800) return 'MASTER';
+      if (rating >= 1600) return 'DIAMOND';
+      if (rating >= 1400) return 'GOLD';
+      if (rating >= 1200) return 'SILVER';
+      return 'BRONZE';
+    }
+
+    function expectedScore(myRating, opponentRating) {
+      return 1 / (1 + Math.pow(10, (opponentRating - myRating) / 400));
+    }
+
+    function calcTwoPlayerRatingDelta(myRating, opponentRating, result) {
+      return Math.round(RATING_K_2P * (result - expectedScore(myRating, opponentRating)));
+    }
+
+    function calcMultiRatingDeltas(players) {
+      const deltas = {};
+      players.forEach(p => deltas[p.uid] = 0);
+      for (let i = 0; i < players.length; i++) {
+        for (let j = i + 1; j < players.length; j++) {
+          const a = players[i], b = players[j];
+          const ar = Number(a.rating || INITIAL_RATING), br = Number(b.rating || INITIAL_RATING);
+          let aResult = 0.5;
+          if (a.rank < b.rank) aResult = 1;
+          else if (a.rank > b.rank) aResult = 0;
+          const delta = Math.round(RATING_K_4P * (aResult - expectedScore(ar, br)));
+          deltas[a.uid] += delta;
+          deltas[b.uid] -= delta;
+        }
+      }
+      return deltas;
+    }
+
+    function updateAccountUI() {
+      const status = document.getElementById('account-status');
+      const ratingEl = document.getElementById('account-rating');
+      const btn = document.getElementById('btn-account');
+      if (!status || !btn) return;
+      if (isPermanentAccount()) {
+        const rating = Number(currentProfile?.rating || INITIAL_RATING);
+        status.textContent = currentUser.email || 'ログイン中';
+        btn.textContent = 'アカウント';
+        if (ratingEl) { ratingEl.classList.remove('hidden'); ratingEl.innerHTML = `RATE <span>${rating}</span> / ${ratingClass(rating)}`; }
+      } else {
+        status.textContent = 'ゲスト（ログインするとランダム対戦でレートを使用できます）';
+        btn.textContent = 'ログイン';
+        if (ratingEl) ratingEl.classList.add('hidden');
+      }
+    }
+
+    function openAccountModal() {
+      accountModal?.classList.remove('hidden');
+      accountModal?.classList.add('flex');
+      const logged = document.getElementById('account-logged-in');
+      const form = document.getElementById('account-form');
+      const text = document.getElementById('account-logged-in-text');
+      if (isPermanentAccount()) {
+        form?.classList.add('hidden'); logged?.classList.remove('hidden');
+        if (text) text.textContent = `${currentUser.email}\nレート ${Number(currentProfile?.rating || INITIAL_RATING)} (${ratingClass(Number(currentProfile?.rating || INITIAL_RATING))})`;
+      } else {
+        form?.classList.remove('hidden'); logged?.classList.add('hidden');
+      }
+    }
+
+    function closeAccountModal() { accountModal?.classList.add('hidden'); accountModal?.classList.remove('flex'); }
+
+    async function handleEmailAuth(mode) {
+      const email = document.getElementById('account-email').value.trim();
+      const password = document.getElementById('account-password').value;
+      const errEl = document.getElementById('account-error');
+      if (errEl) { errEl.classList.add('hidden'); errEl.textContent = ''; }
+      if (!email || !password) { if (errEl) { errEl.textContent = 'メールアドレスとパスワードを入力してください。'; errEl.classList.remove('hidden'); } return; }
+      try {
+        if (mode === 'register') await createUserWithEmailAndPassword(auth, email, password);
+        else await signInWithEmailAndPassword(auth, email, password);
+        await ensureUserProfile();
+        updateAccountUI();
+        closeAccountModal();
+      } catch (e) {
+        console.error('アカウント認証失敗:', e);
+        const messages = {
+          'auth/email-already-in-use': 'このメールアドレスはすでに登録されています。ログインを使用してください。',
+          'auth/invalid-credential': 'メールアドレスまたはパスワードが正しくありません。',
+          'auth/invalid-email': 'メールアドレスの形式が正しくありません。',
+          'auth/weak-password': 'パスワードは6文字以上で設定してください。',
+          'auth/operation-not-allowed': 'Firebase側でメール/パスワード認証が有効になっていません。'
+        };
+        if (errEl) { errEl.textContent = messages[e.code] || `認証に失敗しました。\n${e.message}`; errEl.classList.remove('hidden'); }
+      }
+    }
+
+    async function applyRatingForFinishedMatch(roomData) {
+      if (!roomData?.matchMode || !['random2','random4'].includes(roomData.matchMode) || roomData.ratingSettled) return;
+      const players = Array.isArray(roomData.players) ? roomData.players.filter(p => p.uid && !p.disconnected) : [];
+      if (players.length !== Number(roomData.playerCount)) return;
+      const refs = players.map(p => getUserProfileRef(p.uid));
+      await runTransaction(db, async transaction => {
+        const roomRef = getRoomRef(roomData.roomId);
+        const latestRoomSnap = await transaction.get(roomRef);
+        const latestRoom = latestRoomSnap.data();
+        if (!latestRoom || latestRoom.ratingSettled) return;
+        const profileSnaps = [];
+        for (const ref of refs) profileSnaps.push(await transaction.get(ref));
+        const profiles = players.map((p, i) => ({
+          ...p,
+          rating: Number(profileSnaps[i].exists() ? (profileSnaps[i].data().rating ?? INITIAL_RATING) : INITIAL_RATING)
+        }));
+        const sorted = [...profiles].sort((a,b) => Number(b.score || 0) - Number(a.score || 0));
+        let lastScore = null, rank = 0;
+        sorted.forEach((p, i) => {
+          if (lastScore === null || Number(p.score || 0) < lastScore) rank = i + 1;
+          p.rank = rank; lastScore = Number(p.score || 0);
+        });
+        const deltas = profiles.length === 2
+          ? { [profiles[0].uid]: calcTwoPlayerRatingDelta(profiles[0].rating, profiles[1].rating, profiles[0].rank === profiles[1].rank ? 0.5 : (profiles[0].rank === 1 ? 1 : 0)), [profiles[1].uid]: 0 }
+          : calcMultiRatingDeltas(profiles);
+        if (profiles.length === 2) deltas[profiles[1].uid] = -deltas[profiles[0].uid];
+        const resultByUid = {};
+        profiles.forEach(p => {
+          const result = p.rank === 1 && profiles.filter(x => x.rank === 1).length === 1 ? 'WIN' : (p.rank === profiles.length ? 'LOSS' : (p.rank === 1 ? 'DRAW' : 'MID'));
+          resultByUid[p.uid] = result;
+          const oldProfile = profiles.find(x => x.uid === p.uid);
+          const base = profileSnaps[profiles.indexOf(p)].exists() ? profileSnaps[profiles.indexOf(p)].data() : {};
+          const nextRating = Math.max(0, Math.round(Number(oldProfile.rating || INITIAL_RATING) + Number(deltas[p.uid] || 0)));
+          transaction.set(refs[profiles.indexOf(p)], {
+            uid: p.uid, email: base.email || '', lastRatedRoomId: roomData.roomId, rating: nextRating, games: Number(base.games || 0) + 1,
+            wins: Number(base.wins || 0) + (result === 'WIN' ? 1 : 0), losses: Number(base.losses || 0) + (result === 'LOSS' ? 1 : 0),
+            draws: Number(base.draws || 0) + (result === 'DRAW' ? 1 : 0), updatedAt: Date.now(), createdAt: base.createdAt || Date.now()
+          }, { merge: true });
+        });
+        transaction.update(roomRef, { ratingSettled: true, ratingDeltas: deltas });
+      });
+    }
+
 
     function getMatchmakingPoolRef(mode) {
       return doc(db, 'artifacts', appId, 'public', 'data', 'kidoku_matchmaking', mode);
@@ -788,6 +1007,7 @@
 
     async function startMatchmaking(mode) {
       if (!currentUser) { alert('認証が完了していません。Firebaseの設定を確認してください。'); return; }
+      if (!isPermanentAccount()) { openAccountModal(); alert('ランダム対戦はログインが必要です。ログイン後にもう一度選択してください。'); return; }
       if (!MATCH_MODES[mode]) return;
       if (matchmakingMode) await leaveMatchmaking(false);
 
@@ -797,7 +1017,9 @@
       const poolRef = getMatchmakingPoolRef(mode);
       try {
         const now = Date.now();
-        await setDoc(queueRef, { uid: currentUser.uid, name: playerName, status: 'WAITING', roomId: null, lastSeen: now });
+        const profile = currentProfile || await ensureUserProfile();
+        const myRating = Number(profile?.rating || INITIAL_RATING);
+        await setDoc(queueRef, { uid: currentUser.uid, name: playerName, rating: myRating, status: 'WAITING', roomId: null, lastSeen: now });
 
         await runTransaction(db, async transaction => {
           const snap = await transaction.get(poolRef);
@@ -805,7 +1027,7 @@
           const waiting = (Array.isArray(data.waiting) ? data.waiting : []).filter(p =>
             p && p.uid && Number(p.lastSeen || 0) && now - Number(p.lastSeen) <= DISCONNECT_TIMEOUT_MS && p.uid !== currentUser.uid
           );
-          waiting.push({ uid: currentUser.uid, name: playerName, lastSeen: now });
+          waiting.push({ uid: currentUser.uid, name: playerName, rating: myRating, lastSeen: now });
           transaction.set(poolRef, { waiting, updatedAt: now }, { merge: true });
         });
 
@@ -869,11 +1091,19 @@
             return;
           }
 
-          const selected = waiting.slice(0, target);
+          // ゴッドフィールド風に、基本はレート差200以内でマッチング。
+          // 先頭待機者を基準に、条件を満たすプレイヤーを集める。
+          const anchor = waiting[0];
+          const compatible = waiting.filter(p => Math.abs(Number(p.rating ?? INITIAL_RATING) - Number(anchor.rating ?? INITIAL_RATING)) <= RATING_MATCH_RANGE);
+          if (compatible.length < target) {
+            transaction.set(poolRef, { waiting, updatedAt: now }, { merge: true });
+            return;
+          }
+          const selected = compatible.slice(0, target);
           const roomId = Math.floor(10000 + Math.random() * 90000).toString();
           const oyaIndex = Math.floor(Math.random() * target);
           const players = selected.map((p, idx) => ({
-            id: idx, uid: p.uid, name: p.name || 'プレイヤー', score: 0, hand: [], passRights: false,
+            id: idx, uid: p.uid, name: p.name || 'プレイヤー', rating: Number(p.rating || INITIAL_RATING), score: 0, hand: [], passRights: false,
             plottedCard: null, plottedCardTemp: null, lastSeen: p.lastSeen, disconnected: false
           }));
           const displayOrder = [oyaIndex, ...players.map(p => p.id).filter(id => id !== oyaIndex)];
@@ -883,7 +1113,7 @@
           transaction.set(getRoomRef(roomId), {
             roomId, matchMode: mode, hostId: selected[0].uid, status: 'WAITING', round: 1, oyaIndex,
             playerCount: target, roundLimit, baseTargetScore: baseTarget, fieldScore: 0, targetScore: baseTarget, rewardPt: 1,
-            kidokuActivated: false, kidokuExtensionPending: false, specialCardsEnabled: true, specialCardMode: 'all',
+            kidokuActivated: false, kidokuExtensionPending: false, specialCardsEnabled: true, specialCardMode: 'all', ratingSettled: false, ratingDeltas: {},
             skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
             logs: [`🎯 ランダム${target}人対戦が成立しました！`], displayOrder, players
           });
@@ -1687,6 +1917,16 @@
       try {
         const roundLimit = gameState.roundLimit || getRoundLimit(gameState.playerCount || gameState.players.length || 4);
         if (gameState.round >= roundLimit) {
+          if (gameState.matchMode && isPermanentAccount()) {
+            try {
+              await applyRatingForFinishedMatch(gameState);
+              const refreshed = await getDoc(getRoomRef(currentRoomId));
+              if (refreshed.exists()) gameState = refreshed.data();
+              if (gameState.ratingDeltas?.[currentUser.uid]) {
+                alert(`ゲーム終了！\n今回のレート変動: ${gameState.ratingDeltas[currentUser.uid] > 0 ? '+' : ''}${gameState.ratingDeltas[currentUser.uid]}`);
+              }
+            } catch (e) { console.error('レート更新失敗:', e); alert('ゲームは終了しますが、レート更新に失敗しました。管理者へご連絡ください。'); }
+          }
           await updateDoc(getRoomRef(currentRoomId), { status: 'FINISHED' });
           alert('ゲーム終了！ロビーに戻ります。'); location.reload();
         } else {
