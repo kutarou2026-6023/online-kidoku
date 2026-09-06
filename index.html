@@ -46,7 +46,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.7.2</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.7.3</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -65,7 +65,7 @@
         <p class="text-xs text-slate-500 mt-1 font-bold">友達とルームIDを共有して遊ぼう！</p>
         <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
           <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-          <span class="text-xs text-indigo-600 font-black">1.7.2</span>
+          <span class="text-xs text-indigo-600 font-black">1.7.3</span>
         </div>
       </div>
 
@@ -147,7 +147,7 @@
       <div class="text-center mb-5">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.7.2</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.7.3</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -345,7 +345,7 @@
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
         <div>
           <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.7.2</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.7.3</p>
         </div>
         <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
       </div>
@@ -534,7 +534,7 @@
     let disconnectCheckTimer = null;
     const HEARTBEAT_MS = 5000;
     const DISCONNECT_TIMEOUT_MS = 20000;
-    const GAME_VERSION = '1.7.2';
+    const GAME_VERSION = '1.7.3';
     const INITIAL_RATING = 1500;
     const RATING_MATCH_RANGE = 200;
     const RATING_K_2P = 32;
@@ -1499,18 +1499,22 @@
           return;
         }
         if (gameState.matchMode && gameState.status === 'WAITING') {
-          // ランダムマッチは、マッチング成立時の参加人数がそろったら即開始。
-          // 通常のID部屋の「最大人数」と混同しないよう、実際に参加中の人数を基準にする。
+          // ランダムマッチは、参加人数がそろった時点で「誰の画面でも」自動開始できるようにする。
+          // ホスト本人だけに開始処理を限定すると、認証の再同期や一時的なUID不一致で
+          // 両者が「ホスト待ち」のまま止まる可能性があるため、Firestore transaction で開始権を競合安全に取得する。
           const activePlayers = Array.isArray(gameState.players) ? gameState.players.filter(p => !p.disconnected) : [];
           const requiredPlayers = Number(gameState.playerCount || gameState.maxPlayers || 0);
-          if (activePlayers.length === requiredPlayers && requiredPlayers >= 2 && gameState.hostId === currentUser.uid) {
+          if (activePlayers.length === requiredPlayers && requiredPlayers >= 2) {
             const currentById = new Map(activePlayers.map(p => [p.id, p]));
             const existingOrder = Array.isArray(gameState.displayOrder) ? gameState.displayOrder.filter(id => currentById.has(id)) : [];
             const orderedIds = [...existingOrder, ...activePlayers.map(p => p.id).filter(id => !existingOrder.includes(id))];
             const parentId = orderedIds.includes(gameState.oyaIndex) ? gameState.oyaIndex : orderedIds[Math.floor(Math.random() * orderedIds.length)];
             const finalOrder = [parentId, ...orderedIds.filter(id => id !== parentId)];
             const actualCount = activePlayers.length;
-            const nextState = {
+
+            // setupRoundState() が現在の gameState を直接書き換えるため、候補状態を先に作ってから
+            // transaction 内で「まだ WAITING ならこの状態で開始」を原子的に確定する。
+            const candidateState = {
               ...gameState,
               playerCount: actualCount,
               maxPlayers: Number(gameState.maxPlayers || actualCount),
@@ -1520,16 +1524,31 @@
               baseTargetScore: Number(gameState.targetPoints || getBaseTargetScore(actualCount)),
               status: 'PLAYING'
             };
-            gameState = nextState;
+            const previousState = gameState;
+            gameState = candidateState;
             setupRoundState();
-            const { roomId, matchMode, hostId, status, round, playerCount, maxPlayers, targetPoints, oyaIndex, roundLimit, baseTargetScore, fieldScore, targetScore, rewardPt, kidokuActivated, kidokuExtensionPending, specialCardsEnabled, specialCardMode, ratingSettled, ratingDeltas, skipNextPlayer, disableNextPlayer, lastNumericValue, phase, logs, displayOrder, players, roundTurnOrder, plotDeadline, plotTimeoutHandledAt } = gameState;
-            await updateDoc(getRoomRef(currentRoomId), {
-              roomId, matchMode, hostId, status, round, playerCount, maxPlayers, targetPoints, oyaIndex, roundLimit,
-              baseTargetScore, fieldScore, targetScore, rewardPt, kidokuActivated, kidokuExtensionPending,
-              specialCardsEnabled, specialCardMode, ratingSettled, ratingDeltas, skipNextPlayer, disableNextPlayer,
-              lastNumericValue, phase, logs, displayOrder, players, roundTurnOrder, plotDeadline, plotTimeoutHandledAt
-            });
-            return;
+            const startedState = gameState;
+            gameState = previousState;
+
+            try {
+              const started = await runTransaction(db, async transaction => {
+                const ref = getRoomRef(currentRoomId);
+                const snap = await transaction.get(ref);
+                if (!snap.exists()) return false;
+                const latest = snap.data();
+                const latestPlayers = Array.isArray(latest.players) ? latest.players.filter(p => !p.disconnected) : [];
+                const latestRequired = Number(latest.playerCount || latest.maxPlayers || 0);
+                if (!latest.matchMode || latest.status !== 'WAITING' || latestPlayers.length !== latestRequired || latestRequired < 2) return false;
+                transaction.update(ref, startedState);
+                return true;
+              });
+              if (started) {
+                gameState = startedState;
+                return;
+              }
+            } catch (e) {
+              console.warn('ランダムマッチ自動開始処理失敗:', e);
+            }
           }
         }
         startPresenceMonitoring();
