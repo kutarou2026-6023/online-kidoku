@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット (オンライン対戦版 v1.6.1)</title>
+  <title>既読スルー・プロット (オンライン対戦版 v1.6.2)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -46,7 +46,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.6.1</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.6.2</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -147,7 +147,7 @@
       <div class="text-center mb-5">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.6.1</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.6.2</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -243,6 +243,14 @@
             🔥 既読スルー発動中！ (延長目標: <span id="kidoku-target-score">20</span>pt / 報酬: 2pt)
           </span>
         </div>
+        <div id="plot-timer" class="mt-3 hidden text-center">
+          <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20">
+            <i class="fa-solid fa-clock text-amber-300"></i>
+            <span class="text-xs font-bold text-slate-300">カード選択時間</span>
+            <span id="plot-time-left" class="text-xl font-black text-amber-300 tabular-nums">20</span>
+            <span class="text-xs font-bold text-slate-400">秒</span>
+          </span>
+        </div>
       </div>
 
       <!-- プレイヤー状態 ＆ 提出カード領域 -->
@@ -329,12 +337,19 @@
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
         <div>
           <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.6.1</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.6.2</p>
         </div>
         <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
       </div>
 
-      <div class="overflow-y-auto p-5 space-y-5 text-sm text-slate-700">
+      <div class="px-4 pt-3 bg-white border-b border-slate-100">
+        <div class="grid grid-cols-2 gap-2">
+          <button id="rules-tab-basic" class="py-2.5 rounded-xl bg-indigo-600 text-white font-black text-xs">ルール・特殊カード</button>
+          <button id="rules-tab-detail" class="py-2.5 rounded-xl bg-slate-100 text-slate-600 font-black text-xs">詳細設定・レート</button>
+        </div>
+      </div>
+
+      <div id="rules-basic-content" class="overflow-y-auto p-5 space-y-5 text-sm text-slate-700">
         <section>
           <h3 class="text-sm font-black text-indigo-700 mb-2">🎯 基本ルール</h3>
           <div class="bg-slate-50 rounded-2xl border border-slate-200 p-3 space-y-2 leading-relaxed">
@@ -344,37 +359,34 @@
             <p>・目標点ぴったりなら、そのカードを出したプレイヤーがそのラウンドの報酬点を獲得します。</p>
             <p>・目標点を超えた場合は、<strong>直前のプレイヤー</strong>がそのラウンドの報酬点を獲得します。</p>
             <p>・数字カードを出したプレイヤーは、公開後に<strong>+1～+3の数字カードを1枚補充</strong>します。</p>
+            <p>・カード選択には<strong>20秒</strong>の制限時間があります。時間切れになると、手札にある<strong>+1～+3</strong>の数字カードからランダムに1枚が自動提出されます。</p>
           </div>
         </section>
-
         <section>
-          <h3 class="text-sm font-black text-indigo-700 mb-2">👥 人数ごとの設定</h3>
+          <h3 class="text-sm font-black text-indigo-700 mb-2">👥 人数ごとの基本設定</h3>
           <div class="grid grid-cols-3 gap-2">
             <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-center"><div class="text-xs text-slate-500 font-bold">2人戦</div><div class="text-lg font-black text-indigo-700">8pt</div><div class="text-[10px] text-slate-500 font-bold">4ラウンド</div></div>
             <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-center"><div class="text-xs text-slate-500 font-bold">3人戦</div><div class="text-lg font-black text-indigo-700">9pt</div><div class="text-[10px] text-slate-500 font-bold">3ラウンド</div></div>
             <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 text-center"><div class="text-xs text-slate-500 font-bold">4人戦</div><div class="text-lg font-black text-indigo-700">10pt</div><div class="text-[10px] text-slate-500 font-bold">4ラウンド</div></div>
           </div>
         </section>
-
         <section>
           <h3 class="text-sm font-black text-rose-600 mb-2">🔥 既読スルー</h3>
           <div class="bg-rose-50 rounded-2xl border border-rose-100 p-3 leading-relaxed space-y-2">
             <p>・<strong>親だけ</strong>が有効に使える特殊カードです。</p>
             <p>・既読スルーを宣言した後、基本目標点に到達すると<strong>既読スルー成功</strong>。親が1ptを獲得し、目標が<strong>基本目標の2倍</strong>、報酬が<strong>2pt</strong>になります。</p>
+            <p>・宣言したターンで基本目標点に届かなかった場合は<strong>そのターンで即終了</strong>し、参加中の全員に1ptのペナルティが入ります。その後は通常状態に戻ります。</p>
             <p>・成功後は罰則はありません。以降は<strong>2ptを誰が獲得するか</strong>を競う延長戦です。</p>
           </div>
         </section>
-
         <section>
           <h3 class="text-sm font-black text-indigo-700 mb-2">🎲 誰かと対戦モード</h3>
           <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-3 leading-relaxed text-xs space-y-1.5">
             <p>タイトル画面の<strong>2人対戦</strong>または<strong>4人対戦</strong>から、ルームIDを使わずに対戦相手を探せます。</p>
             <p>希望者が2人・4人そろうと自動でマッチングされ、そのままゲームが始まります。</p>
-            <p>ボタンには、そのモードで<strong>現在待機中またはプレイ中の人数</strong>を表示します。</p>
             <p>ランダムマッチでは特殊カードは<strong>全て使用</strong>に固定されます。</p>
           </div>
         </section>
-
         <section>
           <h3 class="text-sm font-black text-indigo-700 mb-2">⚙️ 特殊カード設定</h3>
           <div class="bg-indigo-50 rounded-2xl border border-indigo-100 p-3 leading-relaxed text-xs space-y-1.5">
@@ -386,7 +398,6 @@
             <p>設定は部屋全体に適用され、ゲーム開始後は変更できません。ラウンドが変わっても、手札は前ラウンド終了時の状態をそのまま引き継ぎます。</p>
           </div>
         </section>
-
         <section>
           <h3 class="text-sm font-black text-amber-700 mb-2">🃏 特殊カード</h3>
           <div class="space-y-2">
@@ -397,14 +408,40 @@
             <div class="bg-slate-100 border border-slate-200 rounded-xl p-3"><div class="font-black text-slate-700">ブロック</div><div class="text-xs leading-relaxed mt-1">次のプレイヤーを<strong>強制的にスキップ</strong>します。</div></div>
           </div>
         </section>
-
         <section>
           <h3 class="text-sm font-black text-indigo-700 mb-2">⏩ パス</h3>
           <div class="bg-slate-50 rounded-2xl border border-slate-200 p-3 leading-relaxed text-xs">未読スルーで得たパス権を使うと、その手番の場の合計は<strong>+0</strong>です。</div>
-          <div class="bg-violet-50 rounded-2xl border border-violet-100 p-3 leading-relaxed text-xs space-y-1.5">
-            <div class="font-black text-violet-700">ランダム対戦とレート</div>
-            <div>ランダム対戦は<strong>ログインが必須</strong>です。初期レートは<strong>1500</strong>。ゴッドフィールドの真剣タイマンを参考に、レート差<strong>200以内</strong>を基本としてマッチングします。</div>
-            <div>2人戦は勝敗に応じてレートが増減し、4人戦は最終順位をもとに各プレイヤー間でレートを計算します。ID対戦にはレート変動はありません。</div>
+        </section>
+      </div>
+
+      <div id="rules-detail-content" class="overflow-y-auto p-5 space-y-5 text-sm text-slate-700 hidden">
+        <section>
+          <h3 class="text-sm font-black text-indigo-700 mb-2">🏠 部屋設定</h3>
+          <div class="bg-indigo-50 rounded-2xl border border-indigo-100 p-3 leading-relaxed text-xs space-y-2">
+            <p>・ホストが<strong>最大人数（2～4人）</strong>を決めます。最大人数は部屋の収容人数です。</p>
+            <p>・最大4人に設定していても、<strong>2人以上集まればホストの判断で開始</strong>できる仕様にできます。</p>
+            <p>・目標Ptは最大人数に応じた基本値（2人=8pt / 3人=9pt / 4人=10pt）を初期値として、ホストが自由に変更できます。</p>
+            <p>・実際にゲームを開始した時点の<strong>参加人数</strong>が、その対戦の人数として扱われます。</p>
+            <p>・部屋の設定変更は<strong>ホストのみ</strong>可能です。ゲストは確認のみできます。</p>
+            <p>・特殊カード設定は全部なし / 既読スルーのみ / 基本3種 / 全て使用の4段階です。</p>
+          </div>
+        </section>
+        <section>
+          <h3 class="text-sm font-black text-emerald-700 mb-2">📊 レート戦</h3>
+          <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-3 leading-relaxed text-xs space-y-2">
+            <p>・<strong>誰かと対戦</strong>からのランダムマッチングはレート戦です。ログインが必要です。</p>
+            <p>・初期レートは<strong>1500</strong>。基本のマッチング範囲は<strong>レート差200以内</strong>です。</p>
+            <p>・2人戦は勝敗をもとにレートが増減します。4人戦は最終順位をもとに、各プレイヤー間の結果を計算して増減します。</p>
+            <p>・レートは0未満にはなりません。</p>
+            <p>・ID指定の通常ルーム対戦はレートに影響しません。</p>
+          </div>
+        </section>
+        <section>
+          <h3 class="text-sm font-black text-violet-700 mb-2">🔐 アカウント</h3>
+          <div class="bg-violet-50 rounded-2xl border border-violet-100 p-3 leading-relaxed text-xs space-y-2">
+            <p>・ログインは<strong>ID＋パスワード</strong>です。</p>
+            <p>・メールアドレスは<strong>任意</strong>で、登録した場合のみID・パスワード復旧に利用できます。</p>
+            <p>・ログイン状態は端末に保存され、ページをリロードしても維持されます。</p>
           </div>
         </section>
       </div>
@@ -438,7 +475,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, setPersistence, browserLocalPersistence, signInAnonymously, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, getDocs, updateDoc, onSnapshot, runTransaction, collection, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // ============================================================================
@@ -489,7 +526,7 @@
     let disconnectCheckTimer = null;
     const HEARTBEAT_MS = 5000;
     const DISCONNECT_TIMEOUT_MS = 20000;
-    const GAME_VERSION = '1.6.1';
+    const GAME_VERSION = '1.6.2';
     const INITIAL_RATING = 1500;
     const RATING_MATCH_RANGE = 200;
     const RATING_K_2P = 32;
@@ -703,6 +740,8 @@
     async function initAuth() {
       if (!isFirebaseReady) return;
       try {
+        await setPersistence(auth, browserLocalPersistence);
+        if (auth.currentUser) return;
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
           await signInWithCustomToken(auth, __initial_auth_token);
         } else {
@@ -1335,14 +1374,21 @@
         
         if (gameState.status === 'FINISHED') {
            stopPresenceMonitoring();
-           const reason = gameState.endReason ? `\n${gameState.endReason}` : '';
-           alert(`ゲームが終了しました。${reason}`);
-           location.reload();
+           document.getElementById('modal-backdrop')?.classList.add('hidden');
+           showScreen('screen-title');
+           currentRoomId = null;
+           if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+           updateAccountUI();
            return;
         }
 
         if (gameState.status === 'WAITING') updateWaitingRoomUI();
         else if (gameState.status === 'PLAYING') updateGameUI();
+
+        // カード選択の20秒タイムアウト
+        if (gameState.status === 'PLAYING' && gameState.phase === 'PLOT' && gameState.hostId === currentUser.uid) {
+          await handlePlotTimeout();
+        }
 
         // ホストの自動進行ロジック
         if (gameState.status === 'PLAYING' && gameState.hostId === currentUser.uid) {
@@ -1356,6 +1402,7 @@
                  isHostProcessingReveal = true;
                  setTimeout(async () => {
                     gameState.phase = 'REVEAL_0';
+                    gameState.plotDeadline = null;
                     gameState.logs.push('🃏 全員のカードが出揃いました。親から順にオープンします！');
                     await updateDoc(getRoomRef(currentRoomId), gameState);
                     setTimeout(() => processRevealStep(0), 500); 
@@ -1612,6 +1659,8 @@
       gameState.lastNumericValue = 0;
       gameState.phase = 'PLOT';
       gameState.roundTurnOrder = getTurnOrder(gameState);
+      gameState.plotDeadline = Date.now() + CARD_SELECT_TIME_MS;
+      gameState.plotTimeoutHandledAt = null;
 
       gameState.players.forEach((p) => {
         // 初回ゲーム開始時だけ初期手札を配布し、次ラウンド以降は前ラウンドの手札をそのまま引き継ぐ。
@@ -1667,6 +1716,68 @@
         pGrid.appendChild(container);
       });
       isUIInitialized = true;
+    }
+
+    function stopPlotTimer() {
+      if (plotTimerInterval) { clearInterval(plotTimerInterval); plotTimerInterval = null; }
+    }
+
+    function updatePlotTimerUI() {
+      const timer = document.getElementById('plot-timer');
+      const leftEl = document.getElementById('plot-time-left');
+      if (!timer || !leftEl) return;
+      if (!gameState || gameState.phase !== 'PLOT' || !gameState.plotDeadline) {
+        timer.classList.add('hidden');
+        stopPlotTimer();
+        return;
+      }
+      timer.classList.remove('hidden');
+      const left = Math.max(0, Math.ceil((Number(gameState.plotDeadline) - Date.now()) / 1000));
+      leftEl.textContent = String(left);
+      leftEl.className = `text-xl font-black tabular-nums ${left <= 5 ? 'text-rose-300 animate-pulse' : left <= 10 ? 'text-amber-300' : 'text-emerald-300'}`;
+    }
+
+    function ensurePlotTimer() {
+      stopPlotTimer();
+      updatePlotTimerUI();
+      if (gameState?.phase === 'PLOT' && gameState.plotDeadline) {
+        plotTimerInterval = setInterval(updatePlotTimerUI, 250);
+      }
+    }
+
+    function chooseTimeoutCard(hand) {
+      const candidates = (hand || []).map((card, idx) => ({card, idx})).filter(x => ['+1','+2','+3'].includes(x.card));
+      if (candidates.length) return candidates[Math.floor(Math.random() * candidates.length)];
+      if ((hand || []).length) return { card: hand[Math.floor(Math.random() * hand.length)], idx: Math.floor(Math.random() * hand.length) };
+      return null;
+    }
+
+    async function handlePlotTimeout() {
+      if (!gameState || gameState.phase !== 'PLOT' || !gameState.plotDeadline || Date.now() < Number(gameState.plotDeadline)) return;
+      if (gameState.hostId !== currentUser?.uid) return;
+      const deadlineKey = Number(gameState.plotDeadline);
+      if (lastTimeoutHandled === deadlineKey || gameState.plotTimeoutHandledAt === deadlineKey) return;
+      lastTimeoutHandled = deadlineKey;
+      const players = getActivePlayers(gameState);
+      let changed = false;
+      players.forEach(p => {
+        if (p.plottedCard === null || p.plottedCard === undefined) {
+          const chosen = chooseTimeoutCard(p.hand);
+          if (chosen) {
+            p.hand.splice(chosen.idx, 1);
+            p.plottedCardTemp = chosen.card;
+            p.plottedCard = 'FACE_DOWN';
+            changed = true;
+            gameState.logs.push(`⏰ <strong>${p.name}</strong> は時間切れ！ [${chosen.card}] が自動選択されました。`);
+          }
+        }
+      });
+      gameState.plotTimeoutHandledAt = deadlineKey;
+      if (changed) {
+        await updateDoc(getRoomRef(currentRoomId), { players: gameState.players, logs: gameState.logs, plotTimeoutHandledAt: deadlineKey });
+      } else {
+        await updateDoc(getRoomRef(currentRoomId), { plotTimeoutHandledAt: deadlineKey });
+      }
     }
 
     function updateGameUI() {
@@ -1777,12 +1888,21 @@
       });
       logBox.scrollTop = logBox.scrollHeight;
       
+      if (gameState.phase === 'PLOT' && gameState.plotDeadline) ensurePlotTimer(); else stopPlotTimer();
       // ラウンド終了モーダル
-      if (gameState.phase === 'ROUND_END') showModalUI();
+      if (gameState.phase === 'ROUND_END' || gameState.phase === 'FINAL_RESULT') showModalUI();
       else document.getElementById('modal-backdrop').classList.add('hidden');
     }
 
     // --- Action Handlers ---
+    setInterval(async () => {
+      if (!gameState) return;
+      updatePlotTimerUI();
+      if (gameState.phase === 'PLOT' && gameState.hostId === currentUser?.uid) {
+        try { await handlePlotTimeout(); } catch (e) { console.error('タイムアウト処理失敗:', e); }
+      }
+    }, 500);
+
     document.getElementById('btn-pass-action').addEventListener('click', () => {
        if (gameState.phase !== 'PLOT') return;
        selectedHandIndex = 'PASS';
@@ -1843,6 +1963,8 @@
             }
           });
           gameState.phase = 'PLOT';
+          gameState.plotDeadline = Date.now() + CARD_SELECT_TIME_MS;
+          gameState.plotTimeoutHandledAt = null;
           await updateDoc(getRoomRef(currentRoomId), gameState);
         }
         return;
@@ -1966,54 +2088,92 @@
             }
           });
           gameState.phase = 'PLOT';
+          gameState.plotDeadline = Date.now() + CARD_SELECT_TIME_MS;
+          gameState.plotTimeoutHandledAt = null;
           await updateDoc(getRoomRef(currentRoomId), gameState);
         }, 1500);
       }
     }
 
     // --- Modal & Next Round ---
+    function renderScoresHtml(sorted) {
+      return sorted.map((p, rank) => `<div class="flex justify-between items-center py-1 border-b border-slate-200 last:border-0">
+        <span>${rank === 0 ? '👑' : `#${rank+1}`} ${p.name}</span>
+        <span class="text-indigo-600 font-extrabold">${p.score} pt</span>
+      </div>`).join('');
+    }
+
     function showModalUI() {
       const scoresBox = document.getElementById('modal-scores');
-      scoresBox.innerHTML = '';
-      const sorted = [...gameState.players].sort((a,b) => b.score - a.score);
-      sorted.forEach((p, rank) => {
-        scoresBox.innerHTML += `<div class="flex justify-between items-center py-1 border-b border-slate-200 last:border-0">
-          <span>${rank === 0 ? '👑' : `#${rank+1}`} ${p.name}</span>
-          <span class="text-indigo-600 font-extrabold">${p.score} pt</span>
-        </div>`;
-      });
-      
+      const title = document.getElementById('modal-title');
+      const desc = document.getElementById('modal-desc');
       const nextBtn = document.getElementById('modal-next-btn');
       const waitMsg = document.getElementById('modal-waiting-msg');
+      const sorted = [...gameState.players].filter(p => !p.disconnected).sort((a,b) => b.score - a.score);
+
+      if (gameState.phase === 'FINAL_RESULT') {
+        title.textContent = '🏆 総合結果';
+        desc.textContent = `${gameState.roundLimit || gameState.round}ラウンド終了！最終結果です。`;
+        let html = `<div class="text-center text-xs font-black text-slate-500 mb-2">最終順位</div>${renderScoresHtml(sorted)}`;
+        if (gameState.matchMode && gameState.ratingDeltas) {
+          html += `<div class="mt-4 pt-3 border-t border-slate-200"><div class="text-xs font-black text-emerald-700 mb-2">レート変動</div>`;
+          sorted.forEach(p => {
+            const d = Number(gameState.ratingDeltas?.[p.uid] || 0);
+            const sign = d > 0 ? '+' : '';
+            const c = d > 0 ? 'text-emerald-600' : d < 0 ? 'text-rose-600' : 'text-slate-500';
+            html += `<div class="flex justify-between items-center py-1"><span>${p.name}</span><span class="font-black ${c}">${sign}${d}</span></div>`;
+          });
+          html += `</div>`;
+        }
+        scoresBox.innerHTML = html;
+        if (gameState.hostId === currentUser.uid) {
+          nextBtn.classList.remove('hidden'); waitMsg.classList.add('hidden');
+          nextBtn.innerHTML = '<span id="text-modal-next">ロビーに戻る</span><i id="spinner-modal-next" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>';
+        } else {
+          nextBtn.classList.add('hidden'); waitMsg.classList.remove('hidden');
+          waitMsg.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> ホストがロビーへ戻るのを待機中...';
+        }
+        document.getElementById('modal-backdrop').classList.remove('hidden');
+        return;
+      }
+
+      title.textContent = 'ラウンド終了';
+      desc.textContent = 'このラウンドの結果';
+      scoresBox.innerHTML = renderScoresHtml(sorted);
+      const roundLimit = gameState.roundLimit || getRoundLimit(gameState.playerCount || gameState.players.length || 4);
       if (gameState.hostId === currentUser.uid) {
         nextBtn.classList.remove('hidden'); waitMsg.classList.add('hidden');
-        const roundLimit = gameState.roundLimit || getRoundLimit(gameState.playerCount || gameState.players.length || 4);
         nextBtn.innerHTML = gameState.round >= roundLimit ? '<span id="text-modal-next">最終結果を見る</span><i id="spinner-modal-next" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>' : `<span id="text-modal-next">第 ${gameState.round + 1} ラウンドへ</span><i id="spinner-modal-next" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>`;
       } else {
         nextBtn.classList.add('hidden'); waitMsg.classList.remove('hidden');
+        waitMsg.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> ホストを待機中...';
       }
       document.getElementById('modal-backdrop').classList.remove('hidden');
     }
 
     document.getElementById('modal-next-btn').addEventListener('click', async () => {
       if (gameState.hostId !== currentUser.uid) return;
-      
       setBtnLoading('modal-next', true);
       try {
         const roundLimit = gameState.roundLimit || getRoundLimit(gameState.playerCount || gameState.players.length || 4);
+        if (gameState.phase === 'FINAL_RESULT') {
+          await updateDoc(getRoomRef(currentRoomId), { status: 'FINISHED' });
+          return;
+        }
         if (gameState.round >= roundLimit) {
           if (gameState.matchMode && isPermanentAccount()) {
             try {
               await applyRatingForFinishedMatch(gameState);
               const refreshed = await getDoc(getRoomRef(currentRoomId));
               if (refreshed.exists()) gameState = refreshed.data();
-              if (gameState.ratingDeltas?.[currentUser.uid]) {
-                alert(`ゲーム終了！\n今回のレート変動: ${gameState.ratingDeltas[currentUser.uid] > 0 ? '+' : ''}${gameState.ratingDeltas[currentUser.uid]}`);
-              }
-            } catch (e) { console.error('レート更新失敗:', e); alert('ゲームは終了しますが、レート更新に失敗しました。管理者へご連絡ください。'); }
+            } catch (e) {
+              console.error('レート更新失敗:', e);
+              alert('ゲームは終了できますが、レート更新に失敗しました。');
+            }
           }
-          await updateDoc(getRoomRef(currentRoomId), { status: 'FINISHED' });
-          alert('ゲーム終了！ロビーに戻ります。'); location.reload();
+          gameState.phase = 'FINAL_RESULT';
+          await updateDoc(getRoomRef(currentRoomId), { phase: 'FINAL_RESULT', ratingDeltas: gameState.ratingDeltas || {} });
+          showModalUI();
         } else {
           gameState.round++;
           gameState.oyaIndex = getNextActivePlayerIndex(gameState, gameState.oyaIndex);
@@ -2026,6 +2186,22 @@
         setBtnLoading('modal-next', false);
       }
     });
+
+    // ルール説明タブ
+    function setRulesTab(tab) {
+      const basic = document.getElementById('rules-basic-content');
+      const detail = document.getElementById('rules-detail-content');
+      const b1 = document.getElementById('rules-tab-basic');
+      const b2 = document.getElementById('rules-tab-detail');
+      const isBasic = tab === 'basic';
+      basic.classList.toggle('hidden', !isBasic);
+      detail.classList.toggle('hidden', isBasic);
+      b1.className = `py-2.5 rounded-xl font-black text-xs ${isBasic ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`;
+      b2.className = `py-2.5 rounded-xl font-black text-xs ${!isBasic ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'}`;
+    }
+    document.getElementById('rules-tab-basic')?.addEventListener('click', () => setRulesTab('basic'));
+    document.getElementById('rules-tab-detail')?.addEventListener('click', () => setRulesTab('detail'));
+    setRulesTab('basic');
 
   </script>
 </body>
