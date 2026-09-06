@@ -46,7 +46,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.7.1</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.7.2</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -65,13 +65,13 @@
         <p class="text-xs text-slate-500 mt-1 font-bold">友達とルームIDを共有して遊ぼう！</p>
         <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
           <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-          <span class="text-xs text-indigo-600 font-black">1.6.1</span>
+          <span class="text-xs text-indigo-600 font-black">1.7.2</span>
         </div>
       </div>
 
       <div class="space-y-2">
         <label class="text-xs font-bold text-slate-500 ml-1">あなたの名前</label>
-        <input type="text" id="player-name" placeholder="ゲストプレイヤー" value="プレイヤー" class="w-full p-4 border-2 border-indigo-100 rounded-2xl font-extrabold text-slate-700 focus:border-indigo-400 focus:outline-none transition shadow-sm text-center">
+        <input type="text" id="player-name" placeholder="プレイヤー名（いつでも変更できます）" value="" maxlength="20" class="w-full p-4 border-2 border-indigo-100 rounded-2xl font-extrabold text-slate-700 focus:border-indigo-400 focus:outline-none transition shadow-sm text-center">
       </div>
 
       <div id="account-panel" class="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
@@ -147,7 +147,7 @@
       <div class="text-center mb-5">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.7.1</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.7.2</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -345,7 +345,7 @@
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
         <div>
           <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.7.1</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.7.2</p>
         </div>
         <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
       </div>
@@ -534,7 +534,7 @@
     let disconnectCheckTimer = null;
     const HEARTBEAT_MS = 5000;
     const DISCONNECT_TIMEOUT_MS = 20000;
-    const GAME_VERSION = '1.7.1';
+    const GAME_VERSION = '1.7.2';
     const INITIAL_RATING = 1500;
     const RATING_MATCH_RANGE = 200;
     const RATING_K_2P = 32;
@@ -549,6 +549,61 @@
     const PLAYER_TARGETS = { 2: 8, 3: 9, 4: 10 };
     const PLAYER_ROUND_LIMITS = { 2: 4, 3: 3, 4: 4 };
     let hostWatchTimer = null;
+    const PLAYER_NAME_STORAGE_KEY = 'kidoku_player_name';
+
+    function getPlayerName() {
+      const input = document.getElementById('player-name');
+      const value = (input?.value || '').trim();
+      if (value) return value;
+      try {
+        return (localStorage.getItem(PLAYER_NAME_STORAGE_KEY) || '').trim();
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function savePlayerName(value) {
+      const name = String(value || '').trim().slice(0, 20);
+      try {
+        if (name) localStorage.setItem(PLAYER_NAME_STORAGE_KEY, name);
+        else localStorage.removeItem(PLAYER_NAME_STORAGE_KEY);
+      } catch (_) {}
+      return name;
+    }
+
+    async function syncMyPlayerNameToCurrentRoom() {
+      if (!currentUser || !currentRoomId || !gameState || gameState.status !== 'WAITING') return;
+      const name = getPlayerName() || 'プレイヤー';
+      const players = Array.isArray(gameState.players) ? gameState.players : [];
+      const me = players.find(p => p.uid === currentUser.uid);
+      if (!me || me.name === name) return;
+      try {
+        const nextPlayers = players.map(p => p.uid === currentUser.uid ? { ...p, name } : p);
+        await updateDoc(getRoomRef(currentRoomId), { players: nextPlayers });
+      } catch (e) {
+        console.warn('部屋内プレイヤー名の更新失敗:', e);
+      }
+    }
+
+    async function syncMyPlayerNameToMatchmaking() {
+      if (!currentUser || !matchmakingMode) return;
+      const name = getPlayerName() || 'プレイヤー';
+      try {
+        await updateDoc(getMatchmakingPlayerRef(matchmakingMode, currentUser.uid), { name });
+        await runTransaction(db, async transaction => {
+          const poolRef = getMatchmakingPoolRef(matchmakingMode);
+          const snap = await transaction.get(poolRef);
+          if (!snap.exists()) return;
+          const data = snap.data();
+          const waiting = (Array.isArray(data.waiting) ? data.waiting : []).map(p =>
+            p.uid === currentUser.uid ? { ...p, name } : p
+          );
+          transaction.update(poolRef, { waiting, updatedAt: Date.now() });
+        });
+      } catch (e) {
+        console.warn('マッチング中プレイヤー名の更新失敗:', e);
+      }
+    }
 
     function getBaseTargetScore(playerCount) {
       return PLAYER_TARGETS[playerCount] || 10;
@@ -743,6 +798,28 @@
         }
       });
     });
+
+    // --- プレイヤー名の保持 ---
+    const playerNameInput = document.getElementById('player-name');
+    if (playerNameInput) {
+      try {
+        const savedName = (localStorage.getItem(PLAYER_NAME_STORAGE_KEY) || '').trim();
+        if (savedName) playerNameInput.value = savedName;
+      } catch (_) {}
+      playerNameInput.addEventListener('input', () => {
+        savePlayerName(playerNameInput.value);
+      });
+      playerNameInput.addEventListener('change', async () => {
+        savePlayerName(playerNameInput.value);
+        await syncMyPlayerNameToCurrentRoom();
+        await syncMyPlayerNameToMatchmaking();
+      });
+      playerNameInput.addEventListener('blur', async () => {
+        savePlayerName(playerNameInput.value);
+        await syncMyPlayerNameToCurrentRoom();
+        await syncMyPlayerNameToMatchmaking();
+      });
+    }
 
     // --- Account UI ---
     accountModal = document.getElementById('account-modal');
@@ -1154,7 +1231,7 @@
       if (matchmakingMode) await leaveMatchmaking(false);
 
       matchmakingMode = mode;
-      const playerName = document.getElementById('player-name').value.trim() || 'プレイヤー';
+      const playerName = getPlayerName() || 'プレイヤー';
       const queueRef = getMatchmakingPlayerRef(mode, currentUser.uid);
       const poolRef = getMatchmakingPoolRef(mode);
       try {
@@ -1259,7 +1336,9 @@
             skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
             logs: [`🎯 ランダム${target}人対戦が成立しました！`], displayOrder, players
           });
-          transaction.set(poolRef, { waiting: waiting.slice(target), updatedAt: now }, { merge: true });
+          const selectedUids = new Set(selected.map(p => p.uid));
+          const remainingWaiting = waiting.filter(p => !selectedUids.has(p.uid));
+          transaction.set(poolRef, { waiting: remainingWaiting, updatedAt: now }, { merge: true });
           selected.forEach(p => transaction.set(
             getMatchmakingPlayerRef(mode, p.uid),
             { uid: p.uid, name: p.name || 'プレイヤー', status: 'MATCHED', roomId, lastSeen: now }
@@ -1305,7 +1384,7 @@
       setBtnLoading('btn-create-room', true);
       
       try {
-        const playerName = document.getElementById('player-name').value || 'ホスト';
+        const playerName = getPlayerName() || 'ホスト';
         const roomId = Math.floor(10000 + Math.random() * 90000).toString();
         
         const initialGameState = {
@@ -1338,7 +1417,7 @@
       setBtnLoading('btn-join-room', true);
 
       try {
-        const playerName = document.getElementById('player-name').value || 'ゲスト';
+        const playerName = getPlayerName() || 'ゲスト';
         
         const docSnap = await getDoc(getRoomRef(roomId));
         if (docSnap.exists()) {
@@ -1419,18 +1498,37 @@
           if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
           return;
         }
-        if (gameState.matchMode && gameState.status === 'WAITING' && gameState.players?.length === Number(gameState.playerCount || 0)) {
-          // ランダムマッチは人数がそろった時点で即ゲーム開始。設定変更は行わない。
-          if (gameState.hostId === currentUser.uid) {
-            gameState.oyaIndex = Math.floor(Math.random() * gameState.playerCount);
-            gameState.roundLimit = getRoundLimit(gameState.playerCount);
-            gameState.baseTargetScore = getBaseTargetScore(gameState.playerCount);
-            const parentId = gameState.oyaIndex;
-            const orderedIds = gameState.players.filter(p => !p.disconnected).map(p => p.id);
-            gameState.displayOrder = [parentId, ...orderedIds.filter(id => id !== parentId)];
-            gameState.status = 'PLAYING';
+        if (gameState.matchMode && gameState.status === 'WAITING') {
+          // ランダムマッチは、マッチング成立時の参加人数がそろったら即開始。
+          // 通常のID部屋の「最大人数」と混同しないよう、実際に参加中の人数を基準にする。
+          const activePlayers = Array.isArray(gameState.players) ? gameState.players.filter(p => !p.disconnected) : [];
+          const requiredPlayers = Number(gameState.playerCount || gameState.maxPlayers || 0);
+          if (activePlayers.length === requiredPlayers && requiredPlayers >= 2 && gameState.hostId === currentUser.uid) {
+            const currentById = new Map(activePlayers.map(p => [p.id, p]));
+            const existingOrder = Array.isArray(gameState.displayOrder) ? gameState.displayOrder.filter(id => currentById.has(id)) : [];
+            const orderedIds = [...existingOrder, ...activePlayers.map(p => p.id).filter(id => !existingOrder.includes(id))];
+            const parentId = orderedIds.includes(gameState.oyaIndex) ? gameState.oyaIndex : orderedIds[Math.floor(Math.random() * orderedIds.length)];
+            const finalOrder = [parentId, ...orderedIds.filter(id => id !== parentId)];
+            const actualCount = activePlayers.length;
+            const nextState = {
+              ...gameState,
+              playerCount: actualCount,
+              maxPlayers: Number(gameState.maxPlayers || actualCount),
+              oyaIndex: parentId,
+              displayOrder: finalOrder,
+              roundLimit: getRoundLimit(actualCount),
+              baseTargetScore: Number(gameState.targetPoints || getBaseTargetScore(actualCount)),
+              status: 'PLAYING'
+            };
+            gameState = nextState;
             setupRoundState();
-            await updateDoc(getRoomRef(currentRoomId), gameState);
+            const { roomId, matchMode, hostId, status, round, playerCount, maxPlayers, targetPoints, oyaIndex, roundLimit, baseTargetScore, fieldScore, targetScore, rewardPt, kidokuActivated, kidokuExtensionPending, specialCardsEnabled, specialCardMode, ratingSettled, ratingDeltas, skipNextPlayer, disableNextPlayer, lastNumericValue, phase, logs, displayOrder, players, roundTurnOrder, plotDeadline, plotTimeoutHandledAt } = gameState;
+            await updateDoc(getRoomRef(currentRoomId), {
+              roomId, matchMode, hostId, status, round, playerCount, maxPlayers, targetPoints, oyaIndex, roundLimit,
+              baseTargetScore, fieldScore, targetScore, rewardPt, kidokuActivated, kidokuExtensionPending,
+              specialCardsEnabled, specialCardMode, ratingSettled, ratingDeltas, skipNextPlayer, disableNextPlayer,
+              lastNumericValue, phase, logs, displayOrder, players, roundTurnOrder, plotDeadline, plotTimeoutHandledAt
+            });
             return;
           }
         }
