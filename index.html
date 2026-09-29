@@ -544,6 +544,8 @@
     let accountModal = null;
     const MATCH_MODES = { random2: 2, random4: 4 };
     let matchmakingMode = null;
+    let matchmakingQueueUnsubscribe = null;
+    let matchmakingRoomDiscoveryUnsubscribe = null;
     let matchmakingPoolUnsubscribes = [];
     let matchmakingWaitingCounts = { random2: 0, random4: 0 };
     let matchmakingRoomCounts = { random2: 0, random4: 0 };
@@ -1261,7 +1263,6 @@
       document.getElementById('matchmaking-mode-label').innerText = `${MATCH_MODES[mode]}人対戦・ランダムマッチング`;
 
       const playerName = getPlayerName() || 'プレイヤー';
-      const queueRef = getMatchmakingPlayerRef(mode, currentUser.uid);
       const poolRef = getMatchmakingPoolRef(mode);
 
       try {
@@ -1269,17 +1270,9 @@
         const profile = currentProfile || await ensureUserProfile();
         const myRating = Number(profile?.rating || INITIAL_RATING);
 
-        // 自分のキュー状態を先に確保。
-        await setDoc(queueRef, {
-          uid: currentUser.uid,
-          name: playerName,
-          rating: myRating,
-          status: 'WAITING',
-          roomId: null,
-          lastSeen: now
-        }, { merge: true });
-
-        // 待機プールへ追加。自分の古いエントリは除去してから追加する。
+        // ランダムマッチは待機プールだけを共有状態として使用します。
+        // 他プレイヤーのキュー文書をクライアントから書き換えないため、
+        // Firestoreのユーザー単位の書き込みルールに引っ掛からない構成です。
         await runTransaction(db, async transaction => {
           const snap = await transaction.get(poolRef);
           const data = snap.exists() ? snap.data() : {};
@@ -1292,19 +1285,30 @@
           transaction.set(poolRef, { waiting, updatedAt: now }, { merge: true });
         });
 
-        matchmakingQueueUnsubscribe = onSnapshot(queueRef, snap => {
-          if (!snap.exists()) return;
-          const data = snap.data();
-          if (data.status === 'MATCHED' && data.roomId) {
-            const roomId = data.roomId;
-            if (matchmakingMode !== mode) return;
-            matchmakingMode = null;
-            if (matchmakingHeartbeatTimer) { clearInterval(matchmakingHeartbeatTimer); matchmakingHeartbeatTimer = null; }
-            if (matchmakingQueueUnsubscribe) { matchmakingQueueUnsubscribe(); matchmakingQueueUnsubscribe = null; }
-            currentRoomId = roomId;
-            listenRoom(roomId);
-          }
-        }, err => console.warn('マッチング結果監視失敗:', err));
+        // 自分のUIDを含む成立済みランダムルームを監視。
+        // MATCHEDキュー文書を他人から書き換える必要はありません。
+        if (matchmakingRoomDiscoveryUnsubscribe) matchmakingRoomDiscoveryUnsubscribe();
+        matchmakingRoomDiscoveryUnsubscribe = onSnapshot(getMatchmakingRoomsQuery(mode), snap => {
+          if (matchmakingMode !== mode || !currentUser) return;
+          const candidates = [];
+          snap.forEach(roomSnap => {
+            const room = roomSnap.data();
+            const players = Array.isArray(room.players) ? room.players : [];
+            if (room.matchMode === mode &&
+                room.status === 'PLAYING' &&
+                players.some(p => p?.uid === currentUser.uid && !p.disconnected)) {
+              candidates.push(room);
+            }
+          });
+          if (!candidates.length) return;
+          candidates.sort((a, b) => Number(a.roomId) - Number(b.roomId));
+          const room = candidates[0];
+          matchmakingMode = null;
+          if (matchmakingHeartbeatTimer) { clearInterval(matchmakingHeartbeatTimer); matchmakingHeartbeatTimer = null; }
+          if (matchmakingRoomDiscoveryUnsubscribe) { matchmakingRoomDiscoveryUnsubscribe(); matchmakingRoomDiscoveryUnsubscribe = null; }
+          currentRoomId = room.roomId;
+          listenRoom(room.roomId);
+        }, err => console.warn('ランダム対戦ルーム監視失敗:', err));
 
         matchmakingHeartbeatTimer = setInterval(() => updateMatchmakingHeartbeat(mode), HEARTBEAT_MS);
         await updateMatchmakingHeartbeat(mode);
@@ -1352,7 +1356,6 @@
             return lastSeen > 0 && now - lastSeen <= DISCONNECT_TIMEOUT_MS;
           });
 
-          // 同じUIDの重複を排除。
           const unique = [];
           const seen = new Set();
           for (const p of waiting) {
@@ -1361,12 +1364,14 @@
               unique.push(p);
             }
           }
+
           if (unique.length < target) {
             transaction.set(poolRef, { waiting: unique, updatedAt: now }, { merge: true });
             return;
           }
 
-          // レート差ではマッチングを止めない。人数だけで成立。
+          // 人数だけで成立。1回のFirestore transactionだけで
+          // 「待機者の確保」と「ルーム作成」を行うため二重成立を防ぎます。
           const selected = unique.slice(0, target);
           const roomId = Math.floor(10000 + Math.random() * 90000).toString();
           const oyaIndex = Math.floor(Math.random() * target);
@@ -1376,22 +1381,27 @@
             name: p.name || 'プレイヤー',
             rating: Number(p.rating || INITIAL_RATING),
             score: 0,
-             hand: getInitialHand('all'),
+            hand: getInitialHand('all'),
             passRights: false,
             plottedCard: null,
             plottedCardTemp: null,
-             lastSeen: now,
+            lastSeen: now,
             disconnected: false
           }));
           const displayOrder = [oyaIndex, ...players.map(p => p.id).filter(id => id !== oyaIndex)];
           const baseTarget = getBaseTargetScore(target);
           const roundLimit = getRoundLimit(target);
 
+          // Firestoreルール上、部屋を作成するユーザー自身をホストにする。
+          // 他参加者のキュー文書は一切更新しません。
+          const hostId = currentUser?.uid;
+          if (!selected.some(p => p.uid === hostId)) return;
+
           transaction.set(getRoomRef(roomId), {
             roomId,
             matchMode: mode,
-            hostId: selected[0].uid,
-             status: 'PLAYING',
+            hostId,
+            status: 'PLAYING',
             round: 1,
             oyaIndex,
             playerCount: target,
@@ -1411,21 +1421,17 @@
             skipNextPlayer: false,
             disableNextPlayer: false,
             lastNumericValue: 0,
-             phase: 'PLOT',
-             roundTurnOrder: players.map((_, i) => (oyaIndex + i) % target),
-             plotDeadline: now + CARD_SELECT_TIME_MS,
-             plotTimeoutHandledAt: null,
-             logs: [`🎯 ランダム${target}人対戦が成立しました！ゲーム開始！`],
+            phase: 'PLOT',
+            roundTurnOrder: players.map((_, i) => (oyaIndex + i) % target),
+            plotDeadline: now + CARD_SELECT_TIME_MS,
+            plotTimeoutHandledAt: null,
+            logs: [`🎯 ランダム${target}人対戦が成立しました！ゲーム開始！`],
             players
           });
 
           const selectedUids = new Set(selected.map(p => p.uid));
           const remaining = unique.filter(p => !selectedUids.has(p.uid));
           transaction.set(poolRef, { waiting: remaining, updatedAt: now }, { merge: true });
-          selected.forEach(p => transaction.set(
-            getMatchmakingPlayerRef(mode, p.uid),
-            { uid: p.uid, name: p.name || 'プレイヤー', status: 'MATCHED', roomId, lastSeen: now }
-          ));
         });
       } catch (e) {
         console.warn(`マッチング成立処理失敗(${mode}):`, e);
@@ -1436,10 +1442,10 @@
       const mode = matchmakingMode;
       if (matchmakingHeartbeatTimer) { clearInterval(matchmakingHeartbeatTimer); matchmakingHeartbeatTimer = null; }
       if (matchmakingQueueUnsubscribe) { matchmakingQueueUnsubscribe(); matchmakingQueueUnsubscribe = null; }
+      if (matchmakingRoomDiscoveryUnsubscribe) { matchmakingRoomDiscoveryUnsubscribe(); matchmakingRoomDiscoveryUnsubscribe = null; }
 
       if (mode && currentUser) {
         try {
-          const queueRef = getMatchmakingPlayerRef(mode, currentUser.uid);
           const poolRef = getMatchmakingPoolRef(mode);
           await runTransaction(db, async transaction => {
             const snap = await transaction.get(poolRef);
@@ -1448,7 +1454,6 @@
               const waiting = (Array.isArray(data.waiting) ? data.waiting : []).filter(p => p.uid !== currentUser.uid);
               transaction.set(poolRef, { waiting, updatedAt: Date.now() }, { merge: true });
             }
-            transaction.delete(queueRef);
           });
         } catch (e) {
           console.warn('マッチング退出処理失敗:', e);
