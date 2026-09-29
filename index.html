@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット (オンライン対戦版 v1.8.4)</title>
+  <title>既読スルー・プロット (オンライン対戦版 v1.8.6)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -46,7 +46,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.8.4</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.8.6</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -56,7 +56,8 @@
     <!-- 1. ロビー画面 -->
     <div id="screen-lobby" class="flex-1 flex flex-col justify-center p-6 space-y-8 bg-slate-50 relative">
       <div id="db-warning" class="absolute top-4 left-4 right-4 bg-rose-100 border border-rose-300 text-rose-700 p-3 rounded-xl text-xs font-bold hidden shadow-sm">
-        <i class="fa-solid fa-triangle-exclamation mr-1"></i> データベース(Firebase)の設定が見つかりません。コード内の <code>firebaseConfig</code> を設定してください。
+        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+        <span id="db-warning-text">オンライン対戦用サーバーに接続できません。これはログインしていないことが原因ではありません。</span>
       </div>
 
       <div class="text-center pt-8">
@@ -65,7 +66,7 @@
         <p class="text-xs text-slate-500 mt-1 font-bold">友達とルームIDを共有して遊ぼう！</p>
         <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
           <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-          <span class="text-xs text-indigo-600 font-black">1.8.4</span>
+          <span class="text-xs text-indigo-600 font-black">1.8.6</span>
         </div>
       </div>
 
@@ -78,7 +79,7 @@
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0">
             <div class="text-[10px] text-slate-400 font-black">アカウント</div>
-            <div id="account-status" class="text-xs font-black text-slate-600 truncate">ゲスト（ログインするとランダム対戦でレートを使用できます）</div>
+            <div id="account-status" class="text-xs font-black text-slate-600 truncate">ゲスト（部屋作成・ID対戦はログイン不要／ランダム対戦はログインが必要）</div>
             <div id="account-rating" class="text-[10px] text-indigo-600 font-black mt-1 hidden">RATE <span>1500</span></div>
           </div>
           <button id="btn-account" class="shrink-0 px-3 py-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl text-xs font-black hover:bg-indigo-100">ログイン</button>
@@ -90,6 +91,11 @@
           <span id="text-create-room">部屋を作る</span>
           <i id="spinner-create-room" class="fa-solid fa-spinner fa-spin ml-2 hidden"></i>
         </button>
+        <p class="text-[11px] text-slate-500 font-bold text-center mt-2">
+          <i class="fa-solid fa-circle-info mr-1 text-indigo-400"></i>
+          <strong class="text-indigo-600">部屋を作る・IDで参加するだけならログイン不要です。</strong>
+          ゲストのまま利用できます。
+        </p>
       </div>
 
       <div class="grid grid-cols-2 gap-3">
@@ -126,8 +132,11 @@
     </div>
 
     <!-- 2. ランダムマッチング待機画面 -->
-    <div id="screen-matchmaking" class="flex-1 flex flex-col justify-center p-6 hidden bg-slate-50">
-      <div class="text-center">
+    <div id="screen-matchmaking" class="flex-1 flex flex-col justify-center p-6 hidden bg-slate-50 relative">
+      <button id="btn-exit-matchmaking-top" class="absolute top-3 left-3 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-black shadow-sm hover:bg-slate-50 active:scale-[0.98] transition z-10">
+        <i class="fa-solid fa-arrow-left mr-1"></i>退出
+      </button>
+      <div class="text-center pt-4">
         <div id="matchmaking-icon" class="text-5xl text-emerald-400 mb-4"><i class="fa-solid fa-people-arrows animate-pulse"></i></div>
         <h2 class="text-xl font-black text-indigo-700">対戦相手を探しています</h2>
         <p id="matchmaking-mode-label" class="text-sm text-slate-500 font-bold mt-2">2人対戦</p>
@@ -143,11 +152,14 @@
     </div>
 
     <!-- 3. 従来のID部屋待機室 -->
-    <div id="screen-waiting" class="flex-1 flex flex-col p-6 hidden bg-slate-50">
-      <div class="text-center mb-5">
+    <div id="screen-waiting" class="flex-1 flex flex-col p-6 hidden bg-slate-50 relative">
+      <button id="btn-exit-waiting-top" class="absolute top-3 left-3 px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-xs font-black shadow-sm hover:bg-slate-50 active:scale-[0.98] transition z-10">
+        <i class="fa-solid fa-arrow-left mr-1"></i>退出
+      </button>
+      <div class="text-center mb-5 pt-4">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.8.4</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.8.6</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -345,7 +357,7 @@
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
         <div>
           <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.8.4</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.8.6</p>
         </div>
         <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
       </div>
@@ -503,10 +515,16 @@
     const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : myFirebaseConfig;
     let app, auth, db;
     let isFirebaseReady = false;
+    let firebaseAuthError = null;
+    let manualRoomExitInProgress = false;
 
     // Configが空かどうかの簡易チェック
     if (Object.keys(firebaseConfig).length === 0) {
-      document.getElementById('db-warning').classList.remove('hidden');
+      firebaseAuthError = new Error('Firebase config is missing');
+      const warning = document.getElementById('db-warning');
+      const warningText = document.getElementById('db-warning-text');
+      if (warningText) warningText.textContent = 'オンライン対戦用サーバーに接続できません。これはログインしていないことが原因ではありません。';
+      warning?.classList.remove('hidden');
       console.error("Firebaseの設定(firebaseConfig)が見つかりません。");
     } else {
       try {
@@ -515,8 +533,12 @@
         db = getFirestore(app);
         isFirebaseReady = true;
       } catch (error) {
+        firebaseAuthError = error;
         console.error("Firebase初期化エラー:", error);
-        alert("データベースの初期化に失敗しました。設定を確認してください。\n" + error.message);
+        const warning = document.getElementById('db-warning');
+        const warningText = document.getElementById('db-warning-text');
+        if (warningText) warningText.textContent = `オンライン対戦用サーバーへ接続できません。ログインの有無ではなく、サーバー側・接続設定側の問題の可能性があります。${error?.code ? ` (${error.code})` : ''}`;
+        warning?.classList.remove('hidden');
       }
     }
 
@@ -535,7 +557,8 @@
     const HEARTBEAT_MS = 5000;
     const DISCONNECT_TIMEOUT_MS = 20000;
     const CARD_SELECT_TIME_MS = 20000; // 手札選択の制限時間（20秒）
-    const GAME_VERSION = '1.8.4';
+    const CARD_SELECT_TIMEOUT_GRACE_MS = 1000; // 本人の自動提出を優先する猶予
+    const GAME_VERSION = '1.8.6';
     const INITIAL_RATING = 1500;
     const RATING_MATCH_RANGE = 200;
     const RATING_K_2P = 32;
@@ -554,6 +577,11 @@
     const PLAYER_ROUND_LIMITS = { 2: 4, 3: 3, 4: 4 };
     let hostWatchTimer = null;
     const PLAYER_NAME_STORAGE_KEY = 'kidoku_player_name';
+    const ACTIVE_ROOM_STORAGE_KEY = 'kidoku_active_room_v2';
+    const PAGE_SESSION_ID = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    let previousRoomCleanupDoneForUid = null;
 
     function getPlayerName() {
       const input = document.getElementById('player-name');
@@ -807,6 +835,167 @@
       });
     });
 
+    function saveActiveRoomSession(roomId) {
+      if (!roomId || !currentUser) return;
+      try {
+        localStorage.setItem(ACTIVE_ROOM_STORAGE_KEY, JSON.stringify({
+          roomId: String(roomId),
+          uid: currentUser.uid,
+          sessionId: PAGE_SESSION_ID,
+          savedAt: Date.now()
+        }));
+      } catch (_) {}
+    }
+
+    function clearActiveRoomSession(roomId = null) {
+      try {
+        const raw = localStorage.getItem(ACTIVE_ROOM_STORAGE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (!roomId || saved?.roomId === String(roomId)) {
+          localStorage.removeItem(ACTIVE_ROOM_STORAGE_KEY);
+        }
+      } catch (_) {}
+    }
+
+    async function cleanupPreviousRoomSession() {
+      if (!currentUser || previousRoomCleanupDoneForUid === currentUser.uid) return;
+      previousRoomCleanupDoneForUid = currentUser.uid;
+
+      let saved = null;
+      try {
+        saved = JSON.parse(localStorage.getItem(ACTIVE_ROOM_STORAGE_KEY) || 'null');
+      } catch (_) {
+        saved = null;
+      }
+      if (!saved?.roomId || saved.uid !== currentUser.uid || saved.sessionId === PAGE_SESSION_ID) return;
+
+      let cleanupSucceeded = false;
+      try {
+        await runTransaction(db, async transaction => {
+          const ref = getRoomRef(saved.roomId);
+          const snap = await transaction.get(ref);
+          if (!snap.exists()) return;
+          const data = snap.data() || {};
+          const players = Array.isArray(data.players) ? data.players.map(p => ({ ...p })) : [];
+          const idx = players.findIndex(p => p?.uid === currentUser.uid &&
+            (!saved.sessionId || !p.sessionId || p.sessionId === saved.sessionId));
+          if (idx < 0) return;
+
+          const leaving = players[idx];
+          const remaining = players.filter((_, i) => i !== idx);
+          const normalized = normalizePlayers(remaining);
+          const nextOrder = (Array.isArray(data.displayOrder) ? data.displayOrder : normalized.map(p => p.id))
+            .filter(id => normalized.some(p => p.id === id));
+          const logs = Array.isArray(data.logs) ? [...data.logs] : [];
+          logs.push(`⚠️ <strong>${leaving.name || 'プレイヤー'}</strong> の前回の接続セッションを終了しました。`);
+
+          const updates = { players: normalized, displayOrder: nextOrder, logs };
+          if (data.hostId === currentUser.uid) {
+            const nextHost = normalized.find(p => !p.disconnected);
+            if (nextHost) {
+              updates.hostId = nextHost.uid;
+              logs.push(`👑 <strong>${nextHost.name || 'プレイヤー'}</strong> が新しいホストになりました。`);
+              updates.logs = logs;
+            } else {
+              updates.status = 'FINISHED';
+              updates.hostId = null;
+              updates.endReason = 'ホストの再読み込みにより、対戦を続けるプレイヤーがいなくなりました。';
+            }
+          } else if (data.status === 'PLAYING' && normalized.filter(p => !p.disconnected).length < 2) {
+            updates.status = 'FINISHED';
+            updates.endReason = '再読み込みにより対戦を続けるプレイヤーが2人未満になりました。';
+          }
+
+          // 待機室は席から外す。対戦中は履歴を残すため切断状態にする。
+          if (data.status === 'PLAYING') {
+            const playingPlayers = players.map((p, i) => i === idx ? { ...p, disconnected: true, disconnectedAt: Date.now(), lastSeen: null } : p);
+            updates.players = normalizePlayers(playingPlayers);
+            updates.displayOrder = (Array.isArray(data.displayOrder) ? data.displayOrder : updates.players.map(p => p.id))
+              .filter(id => updates.players.some(p => p.id === id));
+            if (data.hostId === currentUser.uid) {
+              const nextHost = updates.players.find(p => !p.disconnected);
+              if (nextHost) {
+                updates.hostId = nextHost.uid;
+                updates.status = data.status;
+                updates.endReason = null;
+                const nextLogs = Array.isArray(updates.logs) ? [...updates.logs] : [];
+                nextLogs.push(`👑 <strong>${nextHost.name || 'プレイヤー'}</strong> が新しいホストになりました。`);
+                updates.logs = nextLogs;
+              } else {
+                updates.status = 'FINISHED';
+                updates.hostId = null;
+                updates.endReason = '再読み込みにより対戦を続けるプレイヤーがいなくなりました。';
+              }
+            }
+            const activeCount = updates.players.filter(p => !p.disconnected).length;
+            if (activeCount < 2) {
+              updates.status = 'FINISHED';
+              updates.endReason = '再読み込みにより対戦を続けるプレイヤーが2人未満になりました。';
+            }
+          }
+
+          transaction.update(ref, updates);
+        });
+        cleanupSucceeded = true;
+      } catch (e) {
+        previousRoomCleanupDoneForUid = null;
+        console.warn('前回ルームの退出処理に失敗:', e?.code || e, e?.message || '');
+      } finally {
+        if (cleanupSucceeded) clearActiveRoomSession(saved.roomId);
+      }
+    }
+
+    async function markCurrentRoomDisconnectedOnExit() {
+      let saved = null;
+      try {
+        saved = JSON.parse(localStorage.getItem(ACTIVE_ROOM_STORAGE_KEY) || 'null');
+      } catch (_) { saved = null; }
+      if (!saved?.roomId || !currentUser || saved.uid !== currentUser.uid) return;
+
+      try {
+        await runTransaction(db, async transaction => {
+          const ref = getRoomRef(saved.roomId);
+          const snap = await transaction.get(ref);
+          if (!snap.exists()) return;
+          const data = snap.data() || {};
+          const players = Array.isArray(data.players) ? data.players.map(p => ({ ...p })) : [];
+          const idx = players.findIndex(p => p?.uid === currentUser.uid &&
+            (!saved.sessionId || !p.sessionId || p.sessionId === saved.sessionId));
+          if (idx < 0) return;
+
+          if (data.status === 'WAITING') {
+            const remaining = normalizePlayers(players.filter((_, i) => i !== idx));
+            const updates = {
+              players: remaining,
+              displayOrder: (Array.isArray(data.displayOrder) ? data.displayOrder : remaining.map(p => p.id))
+                .filter(id => remaining.some(p => p.id === id))
+            };
+            if (data.hostId === currentUser.uid) {
+              const nextHost = remaining.find(p => !p.disconnected);
+              if (nextHost) updates.hostId = nextHost.uid;
+              else { updates.status = 'FINISHED'; updates.hostId = null; }
+            }
+            transaction.update(ref, updates);
+          } else if (data.status === 'PLAYING') {
+            players[idx] = { ...players[idx], disconnected: true, disconnectedAt: Date.now(), lastSeen: null };
+            let updates = { players: normalizePlayers(players) };
+            if (data.hostId === currentUser.uid) {
+              const nextHost = updates.players.find(p => !p.disconnected);
+              if (nextHost) updates.hostId = nextHost.uid;
+            }
+            if (updates.players.filter(p => !p.disconnected).length < 2) {
+              updates.status = 'FINISHED';
+              updates.endReason = 'プレイヤーの退出により対戦を終了しました。';
+            }
+            transaction.update(ref, updates);
+          }
+        });
+      } catch (e) {
+        console.warn('終了時の退出処理に失敗:', e?.code || e, e?.message || '');
+      }
+    }
+
     // --- プレイヤー名の保持 ---
     const playerNameInput = document.getElementById('player-name');
     if (playerNameInput) {
@@ -838,7 +1027,13 @@
     document.getElementById('btn-forgot-id')?.addEventListener('click', handleForgotId);
     document.getElementById('btn-forgot-password')?.addEventListener('click', handleForgotPassword);
     document.getElementById('btn-logout')?.addEventListener('click', async () => {
-      try { await signOut(auth); closeAccountModal(); await initAuth(); } catch (e) { alert('ログアウトに失敗しました。\n' + e.message); }
+      try {
+        await markCurrentRoomDisconnectedOnExit();
+        await signOut(auth);
+        clearActiveRoomSession();
+        closeAccountModal();
+        await initAuth();
+      } catch (e) { alert('ログアウトに失敗しました。\n' + e.message); }
     });
     accountModal?.addEventListener('click', e => { if (e.target === accountModal) closeAccountModal(); });
 
@@ -854,8 +1049,13 @@
           await signInAnonymously(auth);
         }
       } catch (error) {
-        console.error("認証エラー:", error);
-        alert("データベースへの接続(認証)に失敗しました。");
+        firebaseAuthError = error;
+        console.error("匿名/初期認証エラー:", error);
+        const warning = document.getElementById('db-warning');
+        const warningText = document.getElementById('db-warning-text');
+        if (warningText) warningText.textContent = `オンライン対戦用サーバーへの認証に失敗しました。ログインしていないことが原因ではありません。${error?.code ? ` (${error.code})` : ''}`;
+        warning?.classList.remove('hidden');
+        updateAccountUI();
       }
     }
     
@@ -865,7 +1065,13 @@
     if (isFirebaseReady) {
       onAuthStateChanged(auth, async user => {
         currentUser = user;
-        if (user && !user.isAnonymous) { try { await ensureUserProfile(); } catch (e) { console.warn('プロフィール取得失敗:', e); } } else { currentProfile = null; }
+        if (user) firebaseAuthError = null;
+        if (user && !user.isAnonymous) {
+          try { await ensureUserProfile(); } catch (e) { console.warn('プロフィール取得失敗:', e); }
+        } else { currentProfile = null; }
+        if (user) {
+          void cleanupPreviousRoomSession();
+        }
         updateAccountUI();
         const createBtn = document.getElementById('btn-create-room');
         const joinBtn = document.getElementById('btn-join-room');
@@ -875,7 +1081,7 @@
       initAuth();
       startMatchmakingLobbyListeners();
     } else {
-      // Firebase初期化に失敗しても、エラーメッセージを確認できるようにする。
+      // Firebase初期化に失敗しているため、作成/参加操作は押せるままにして原因を表示する。
       const createBtn = document.getElementById('btn-create-room');
       const joinBtn = document.getElementById('btn-join-room');
       if (createBtn) createBtn.disabled = false;
@@ -954,7 +1160,9 @@
         btn.textContent = 'アカウント';
         if (ratingEl) { ratingEl.classList.remove('hidden'); ratingEl.innerHTML = `RATE <span>${rating}</span> / ${ratingClass(rating)}`; }
       } else {
-        status.textContent = 'ゲスト（ログインするとランダム対戦でレートを使用できます）';
+        status.textContent = firebaseAuthError
+          ? 'オンライン接続エラー（ログインの問題ではありません）'
+          : 'ゲスト（部屋作成・ID対戦はログイン不要／ランダム対戦はログインが必要）';
         btn.textContent = 'ログイン';
         if (ratingEl) ratingEl.classList.add('hidden');
       }
@@ -1026,6 +1234,7 @@
         }
         updateAccountUI();
         closeAccountModal();
+        alert(mode === 'login' ? 'ログインに成功しました！' : 'アカウント登録に成功しました！');
       } catch (e) {
         console.error('ID認証失敗:', e);
         const messages = {
@@ -1176,7 +1385,7 @@
       if (event.target === rulesModal) closeRulesModal();
     });
 
-    // --- Random Matchmaking (v1.8.4: unified shared-pool engine) ---
+    // --- Random Matchmaking (v1.8.6: unified shared-pool engine) ---
     // 2人/4人をそれぞれ独立した待機プールで管理します。
     // 個別 players/{uid} キュー文書は使わず、待機プールとランダム対戦ルームだけで状態を管理します。
 
@@ -1267,9 +1476,55 @@
       }
     }
 
+    async function ensureGuestAuthForRoom() {
+      if (currentUser) return currentUser;
+      if (!isFirebaseReady || !auth) {
+        const err = new Error('オンライン対戦用サーバーに接続できません。');
+        err.code = 'online-unavailable';
+        throw err;
+      }
+      try {
+        if (auth.currentUser) {
+          currentUser = auth.currentUser;
+          return currentUser;
+        }
+        await signInAnonymously(auth);
+        currentUser = auth.currentUser;
+        if (!currentUser) {
+          const err = new Error('ゲスト接続を確立できませんでした。');
+          err.code = 'anonymous-auth-failed';
+          throw err;
+        }
+        firebaseAuthError = null;
+        updateAccountUI();
+        return currentUser;
+      } catch (e) {
+        firebaseAuthError = e;
+        throw e;
+      }
+    }
+
+    function showRoomActionError(prefix, error) {
+      const code = error?.code || '';
+      if (code === 'online-unavailable' || !isFirebaseReady || firebaseAuthError) {
+        alert(`${prefix}オンライン対戦用サーバーに接続できません。これは「ログインしていない」ことが原因ではありません。サーバーへの接続・認証に問題が発生しています。`);
+        return;
+      }
+      if (code === 'permission-denied') {
+        alert(`${prefix}サーバーから操作が拒否されました。ログイン状態の問題ではなく、オンライン対戦の権限設定またはサーバー側の問題の可能性があります。`);
+        return;
+      }
+      alert(`${prefix}${error?.message || error}`);
+    }
+
     async function startMatchmaking(mode) {
-      if (!currentUser) {
-        alert('認証が完了していません。Firebaseの設定を確認してください。');
+      if (!isFirebaseReady || !currentUser) {
+        if (firebaseAuthError || !isFirebaseReady) {
+          showRoomActionError('ランダム対戦を開始できません。', firebaseAuthError || { code: 'online-unavailable' });
+        } else {
+          alert('ランダム対戦はIDログインが必要です。現在はゲスト状態です。');
+          openAccountModal();
+        }
         return;
       }
       if (!isPermanentAccount()) {
@@ -1404,6 +1659,7 @@
             plottedCard: null,
             plottedCardTemp: null,
             lastSeen: now,
+            sessionId: PAGE_SESSION_ID,
             disconnected: false
           }));
           const displayOrder = [oyaIndex, ...players.map(p => p.id).filter(id => id !== oyaIndex)];
@@ -1480,6 +1736,58 @@
       if (showLobby) switchScreen('screen-lobby');
     }
 
+    async function leaveCurrentRoomAndReturnToLobby() {
+      const roomId = currentRoomId;
+      if (!roomId || !currentUser) {
+        switchScreen('screen-lobby');
+        return;
+      }
+      manualRoomExitInProgress = true;
+      if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
+      stopPresenceMonitoring();
+      try {
+        await markCurrentRoomDisconnectedOnExit();
+      } catch (e) {
+        console.warn('手動退出処理失敗:', e?.code || e, e?.message || '');
+      } finally {
+        clearActiveRoomSession(roomId);
+        currentRoomId = null;
+        gameState = null;
+        selectedHandIndex = null;
+        manualRoomExitInProgress = false;
+        switchScreen('screen-lobby');
+      }
+    }
+
+    document.getElementById('btn-exit-matchmaking-top')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-exit-matchmaking-top');
+      if (btn) btn.disabled = true;
+      try {
+        if (matchmakingMode) {
+          await leaveMatchmaking(true);
+        } else if (currentRoomId && gameState) {
+          await leaveCurrentRoomAndReturnToLobby();
+        } else {
+          switchScreen('screen-lobby');
+        }
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+
+    document.getElementById('btn-exit-waiting-top')?.addEventListener('click', async () => {
+      const btn = document.getElementById('btn-exit-waiting-top');
+      if (btn?.disabled) return;
+      const ok = confirm('この部屋から退出してロビーに戻りますか？');
+      if (!ok) return;
+      if (btn) btn.disabled = true;
+      try {
+        await leaveCurrentRoomAndReturnToLobby();
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    });
+
     document.getElementById('btn-match-2')?.addEventListener('click', () => { void startMatchmaking('random2'); });
     document.getElementById('btn-match-4')?.addEventListener('click', () => { void startMatchmaking('random4'); });
     document.getElementById('btn-cancel-matchmaking')?.addEventListener('click', async (event) => {
@@ -1492,42 +1800,45 @@
 
     // --- Lobby Functions ---
     document.getElementById('btn-create-room').addEventListener('click', async () => {
-      if (!currentUser) { alert("認証が完了していません。Firebaseの設定を確認してください。"); return; }
-      
       setBtnLoading('btn-create-room', true);
-      
       try {
+        // 部屋作成は永久アカウントへのログイン不要。ゲスト認証で参加できます。
+        await ensureGuestAuthForRoom();
         const playerName = getPlayerName() || 'ホスト';
         const roomId = Math.floor(10000 + Math.random() * 90000).toString();
-        
         const initialGameState = {
           roomId, matchMode: null, hostId: currentUser.uid, status: 'WAITING', round: 1, oyaIndex: 0,
           playerCount: 1, maxPlayers: 4, targetPoints: 10, roundLimit: 4, baseTargetScore: 10, fieldScore: 0, targetScore: 10, rewardPt: 1, kidokuActivated: false,
-          specialCardsEnabled: true, specialCardMode: 'all',
+          specialCardsEnabled: true, specialCardMode: 'kidoku',
           skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
           logs: [],
           displayOrder: [0],
-          players: [{ id: 0, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, lastSeen: Date.now(), disconnected: false }]
+          players: [{ id: 0, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, lastSeen: Date.now(), sessionId: PAGE_SESSION_ID, disconnected: false }]
         };
-
         await setDoc(getRoomRef(roomId), initialGameState);
         currentRoomId = roomId;
         listenRoom(roomId);
       } catch (error) {
-        console.error(error);
-        alert("部屋の作成に失敗しました。\n" + error.message);
+        console.error('部屋作成失敗:', error);
+        showRoomActionError('部屋の作成に失敗しました。', error);
       } finally {
         setBtnLoading('btn-create-room', false);
       }
     });
 
     document.getElementById('btn-join-room').addEventListener('click', async () => {
-      if (!currentUser) { alert("認証が完了していません。Firebaseの設定を確認してください。"); return; }
-      
-      const roomId = document.getElementById('room-id-input').value.trim();
-      if (roomId.length !== 5) { alert('5桁のルームIDを入力してください'); return; }
-
       setBtnLoading('btn-join-room', true);
+      try {
+        // IDによる通常ルーム参加も永久アカウントへのログイン不要です。
+        await ensureGuestAuthForRoom();
+      } catch (error) {
+        console.error('ゲスト認証失敗:', error);
+        showRoomActionError('部屋への参加に失敗しました。', error);
+        setBtnLoading('btn-join-room', false);
+        return;
+      }
+      const roomId = document.getElementById('room-id-input').value.trim();
+      if (roomId.length !== 5) { alert('5桁のルームIDを入力してください'); setBtnLoading('btn-join-room', false); return; }
 
       try {
         const playerName = getPlayerName() || 'ゲスト';
@@ -1539,11 +1850,17 @@
           const maxPlayers = Number(data.maxPlayers || data.playerCount || 4);
           if (data.players.length >= maxPlayers) { alert(`この部屋は${maxPlayers}人設定です。満室です。`); return; }
 
-          const playerExists = data.players.some(p => p.uid === currentUser.uid && !p.disconnected);
-          if (!playerExists) {
+          const existingIndex = data.players.findIndex(p => p.uid === currentUser.uid);
+          if (existingIndex >= 0) {
+            const nextPlayers = data.players.map((p, i) => i === existingIndex
+              ? { ...p, name: playerName, sessionId: PAGE_SESSION_ID, lastSeen: Date.now(), disconnected: false }
+              : p
+            );
+            await updateDoc(getRoomRef(roomId), { players: normalizePlayers(nextPlayers) });
+          } else {
             const nextPlayers = normalizePlayers([
               ...data.players.filter(p => !p.disconnected),
-              { uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, lastSeen: Date.now(), disconnected: false }
+              { uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, lastSeen: Date.now(), sessionId: PAGE_SESSION_ID, disconnected: false }
             ]);
             const displayOrder = Array.isArray(data.displayOrder) ? data.displayOrder.slice() : nextPlayers.map(p => p.id);
             if (!displayOrder.includes(nextPlayers[nextPlayers.length - 1].id)) displayOrder.push(nextPlayers[nextPlayers.length - 1].id);
@@ -1555,8 +1872,8 @@
           alert('部屋が見つかりません');
         }
       } catch (error) {
-        console.error(error);
-        alert("部屋への参加に失敗しました。\n" + error.message);
+        console.error('部屋への参加失敗:', error);
+        showRoomActionError('部屋への参加に失敗しました。', error);
       } finally {
         setBtnLoading('btn-join-room', false);
       }
@@ -1598,16 +1915,19 @@
 
     // --- Realtime Sync ---
     function listenRoom(roomId) {
+      if (currentRoomId !== roomId) currentRoomId = roomId;
+      saveActiveRoomSession(roomId);
       if (unsubscribeSnapshot) unsubscribeSnapshot();
       unsubscribeSnapshot = onSnapshot(getRoomRef(roomId), async (docSnap) => {
         if (!docSnap.exists()) return;
         gameState = docSnap.data();
         const meInRoom = Array.isArray(gameState.players) && gameState.players.some(p => p.uid === currentUser?.uid && !p.disconnected);
-        if (currentRoomId && !meInRoom && gameState.status !== 'FINISHED') {
+        if (currentRoomId && !meInRoom && gameState.status !== 'FINISHED' && !manualRoomExitInProgress) {
           stopPresenceMonitoring();
           alert('ホストによって部屋から退出させられました。');
+          clearActiveRoomSession(currentRoomId);
           currentRoomId = null;
-          showScreen('screen-title');
+          switchScreen('screen-lobby');
           if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
           return;
         }
@@ -1618,7 +1938,8 @@
         if (gameState.status === 'FINISHED') {
            stopPresenceMonitoring();
            document.getElementById('modal-backdrop')?.classList.add('hidden');
-           showScreen('screen-title');
+           switchScreen('screen-lobby');
+           clearActiveRoomSession(currentRoomId);
            currentRoomId = null;
            if (unsubscribeSnapshot) { unsubscribeSnapshot(); unsubscribeSnapshot = null; }
            updateAccountUI();
@@ -1704,9 +2025,10 @@
           if (!snap.exists()) return;
           const data = snap.data();
           const players = Array.isArray(data.players) ? data.players.map(p => ({...p})) : [];
-          const idx = players.findIndex(p => p.uid === myUid && !p.disconnected);
+          const idx = players.findIndex(p => p.uid === myUid && !p.disconnected &&
+            (!p.sessionId || p.sessionId === PAGE_SESSION_ID));
           if (idx === -1) return;
-          players[idx].lastSeen = Date.now();
+          players[idx] = { ...players[idx], lastSeen: Date.now(), sessionId: PAGE_SESSION_ID };
           transaction.update(ref, { players });
         });
       } catch (e) {
@@ -1819,7 +2141,12 @@
       if (hostWatchTimer) { clearInterval(hostWatchTimer); hostWatchTimer = null; }
     }
 
+    window.addEventListener('pagehide', () => {
+      void markCurrentRoomDisconnectedOnExit();
+      stopPresenceMonitoring();
+    });
     window.addEventListener('beforeunload', () => {
+      void markCurrentRoomDisconnectedOnExit();
       stopPresenceMonitoring();
     });
 
@@ -2023,37 +2350,112 @@
     }
 
     function chooseTimeoutCard(hand) {
-      const candidates = (hand || []).map((card, idx) => ({card, idx})).filter(x => ['+1','+2','+3'].includes(x.card));
-      if (candidates.length) return candidates[Math.floor(Math.random() * candidates.length)];
-      if ((hand || []).length) return { card: hand[Math.floor(Math.random() * hand.length)], idx: Math.floor(Math.random() * hand.length) };
-      return null;
+      const candidates = (hand || []).map((card, idx) => ({ card, idx }))
+        .filter(x => ['+1','+2','+3'].includes(x.card));
+      if (!candidates.length) return null;
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    async function submitMyCardSelection({ timeout = false } = {}) {
+      if (!currentUser || !currentRoomId || !gameState || gameState.status !== 'PLAYING' || gameState.phase !== 'PLOT') return false;
+      const wantedSelection = selectedHandIndex;
+      let submitted = false;
+
+      try {
+        await runTransaction(db, async transaction => {
+          const ref = getRoomRef(currentRoomId);
+          const snap = await transaction.get(ref);
+          if (!snap.exists()) return;
+          const data = snap.data() || {};
+          if (data.status !== 'PLAYING' || data.phase !== 'PLOT') return;
+          if (data.plotDeadline && Date.now() < Number(data.plotDeadline) && timeout) return;
+
+          const players = Array.isArray(data.players) ? data.players.map(p => ({ ...p, hand: Array.isArray(p.hand) ? [...p.hand] : [] })) : [];
+          const myIdx = players.findIndex(p => p.uid === currentUser.uid && !p.disconnected);
+          if (myIdx < 0) return;
+          const me = players[myIdx];
+          if (me.plottedCard !== null && me.plottedCard !== undefined) return;
+
+          let actualCard = null;
+          if (wantedSelection === 'PASS' && me.passRights) {
+            actualCard = 'PASS';
+            me.passRights = false;
+          } else if (Number.isInteger(wantedSelection) && wantedSelection >= 0 && wantedSelection < me.hand.length) {
+            actualCard = me.hand.splice(wantedSelection, 1)[0];
+          } else if (timeout) {
+            const chosen = chooseTimeoutCard(me.hand);
+            if (chosen) actualCard = me.hand.splice(chosen.idx, 1)[0];
+          }
+
+          if (!actualCard) return;
+          me.plottedCardTemp = actualCard;
+          me.plottedCard = 'FACE_DOWN';
+          players[myIdx] = me;
+
+          const logs = Array.isArray(data.logs) ? [...data.logs] : [];
+          if (timeout) {
+            logs.push(`⏰ <strong>${me.name || 'プレイヤー'}</strong> は時間切れ！ [${actualCard}] を自動提出しました。`);
+          }
+          transaction.update(ref, timeout ? { players, logs, plotTimeoutHandledAt: Number(data.plotDeadline || Date.now()) } : { players });
+          submitted = true;
+        });
+      } catch (e) {
+        console.error('カード提出失敗:', e?.code || e, e?.message || '');
+        if (!timeout) alert(`カードの提出に失敗しました。\n${e?.message || e}`);
+      }
+
+      if (submitted) {
+        selectedHandIndex = null;
+        if (gameState) updateGameUI();
+      }
+      return submitted;
     }
 
     async function handlePlotTimeout() {
-      if (!gameState || gameState.phase !== 'PLOT' || !gameState.plotDeadline || Date.now() < Number(gameState.plotDeadline)) return;
-      if (gameState.hostId !== currentUser?.uid) return;
+      if (!gameState || gameState.phase !== 'PLOT' || !gameState.plotDeadline) return;
       const deadlineKey = Number(gameState.plotDeadline);
+      if (Date.now() < deadlineKey + CARD_SELECT_TIMEOUT_GRACE_MS) return;
+      if (gameState.hostId !== currentUser?.uid) return;
       if (lastTimeoutHandled === deadlineKey || gameState.plotTimeoutHandledAt === deadlineKey) return;
-      lastTimeoutHandled = deadlineKey;
-      const players = getActivePlayers(gameState);
-      let changed = false;
-      players.forEach(p => {
-        if (p.plottedCard === null || p.plottedCard === undefined) {
-          const chosen = chooseTimeoutCard(p.hand);
-          if (chosen) {
+
+      let handled = false;
+      try {
+        await runTransaction(db, async transaction => {
+          const ref = getRoomRef(currentRoomId);
+          const snap = await transaction.get(ref);
+          if (!snap.exists()) return;
+          const data = snap.data() || {};
+          if (data.status !== 'PLAYING' || data.phase !== 'PLOT' || Number(data.plotDeadline) !== deadlineKey) return;
+          if (data.plotTimeoutHandledAt === deadlineKey) return;
+
+          const playersNow = Array.isArray(data.players)
+            ? data.players.map(p => ({ ...p, hand: Array.isArray(p.hand) ? [...p.hand] : [] }))
+            : [];
+          const logList = Array.isArray(data.logs) ? [...data.logs] : [];
+          let changed = false;
+
+          playersNow.forEach(p => {
+            if (p.disconnected || (p.plottedCard !== null && p.plottedCard !== undefined)) return;
+            const chosen = chooseTimeoutCard(p.hand);
+            if (!chosen) return;
             p.hand.splice(chosen.idx, 1);
             p.plottedCardTemp = chosen.card;
             p.plottedCard = 'FACE_DOWN';
+            logList.push(`⏰ <strong>${p.name || 'プレイヤー'}</strong> は時間切れ！ [${chosen.card}] を自動提出しました。`);
             changed = true;
-            gameState.logs.push(`⏰ <strong>${p.name}</strong> は時間切れ！ [${chosen.card}] が自動選択されました。`);
-          }
-        }
-      });
-      gameState.plotTimeoutHandledAt = deadlineKey;
-      if (changed) {
-        await updateDoc(getRoomRef(currentRoomId), { players: gameState.players, logs: gameState.logs, plotTimeoutHandledAt: deadlineKey });
-      } else {
-        await updateDoc(getRoomRef(currentRoomId), { plotTimeoutHandledAt: deadlineKey });
+          });
+
+          transaction.update(ref, {
+            players: playersNow,
+            ...(changed ? { logs: logList } : {}),
+            plotTimeoutHandledAt: deadlineKey
+          });
+          handled = true;
+        });
+
+        if (handled) lastTimeoutHandled = deadlineKey;
+      } catch (e) {
+        console.error('ホストの時間切れ処理失敗:', e?.code || e, e?.message || '');
       }
     }
 
@@ -2174,8 +2576,16 @@
     setInterval(async () => {
       if (!gameState) return;
       updatePlotTimerUI();
-      if (gameState.phase === 'PLOT' && gameState.hostId === currentUser?.uid) {
-        try { await handlePlotTimeout(); } catch (e) { console.error('タイムアウト処理失敗:', e); }
+      if (gameState.status === 'PLAYING' && gameState.phase === 'PLOT' && gameState.plotDeadline && Date.now() >= Number(gameState.plotDeadline)) {
+        try {
+          if (gameState.hostId === currentUser?.uid) {
+            await handlePlotTimeout();
+          } else if (gameState.players?.some(p => p.uid === currentUser?.uid && !p.disconnected && p.plottedCard === null)) {
+            await submitMyCardSelection({ timeout: true });
+          }
+        } catch (e) {
+          console.error('タイムアウト処理失敗:', e);
+        }
       }
     }, 500);
 
@@ -2187,26 +2597,9 @@
 
     document.getElementById('submit-btn').addEventListener('click', async () => {
       if (gameState.phase !== 'PLOT' || selectedHandIndex === null) return;
-      
       setBtnLoading('submit-btn', true);
       try {
-        const myIdx = gameState.players.findIndex(p => p.uid === currentUser.uid);
-        const me = gameState.players[myIdx];
-        if (me.plottedCard !== null) return; // 提出済み
-        
-        if (selectedHandIndex === 'PASS') {
-          me.plottedCardTemp = 'PASS'; me.passRights = false;
-        } else {
-          me.plottedCardTemp = me.hand.splice(selectedHandIndex, 1)[0];
-        }
-        me.plottedCard = 'FACE_DOWN';
-        selectedHandIndex = null;
-        
-        updateGameUI(); // ローカル先行更新
-        await updateDoc(getRoomRef(currentRoomId), { players: gameState.players });
-      } catch (e) {
-        console.error(e);
-        alert("カードの提出に失敗しました");
+        await submitMyCardSelection({ timeout: false });
       } finally {
         setBtnLoading('submit-btn', false);
       }
