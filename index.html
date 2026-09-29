@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット (オンライン対戦版 v1.8.2)</title>
+  <title>既読スルー・プロット (オンライン対戦版 v1.8.3)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -46,7 +46,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.8.2</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.8.3</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -65,7 +65,7 @@
         <p class="text-xs text-slate-500 mt-1 font-bold">友達とルームIDを共有して遊ぼう！</p>
         <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
           <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-          <span class="text-xs text-indigo-600 font-black">1.8.0</span>
+          <span class="text-xs text-indigo-600 font-black">1.8.3</span>
         </div>
       </div>
 
@@ -147,7 +147,7 @@
       <div class="text-center mb-5">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.8.2</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.8.3</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -345,7 +345,7 @@
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
         <div>
           <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.8.2</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.8.3</p>
         </div>
         <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
       </div>
@@ -534,7 +534,7 @@
     let disconnectCheckTimer = null;
     const HEARTBEAT_MS = 5000;
     const DISCONNECT_TIMEOUT_MS = 20000;
-    const GAME_VERSION = '1.8.2';
+    const GAME_VERSION = '1.8.3';
     const INITIAL_RATING = 1500;
     const RATING_MATCH_RANGE = 200;
     const RATING_K_2P = 32;
@@ -1168,7 +1168,7 @@
       if (event.target === rulesModal) closeRulesModal();
     });
 
-    // --- Random Matchmaking (v1.8.2: restore known-simple queue engine) ---
+    // --- Random Matchmaking (v1.8.3: restore known-simple queue engine) ---
     // 2人/4人をそれぞれ独立したFirestore待機キューで管理します。
     // v1.5.9〜v1.7.x系で使っていた「queue -> MATCHED -> room」方式に戻し、
     // 今回は明らかな不具合だった未定義カウンタと古いroomの人数集計だけを修正します。
@@ -1375,11 +1375,11 @@
             name: p.name || 'プレイヤー',
             rating: Number(p.rating || INITIAL_RATING),
             score: 0,
-            hand: [],
+             hand: getInitialHand('all'),
             passRights: false,
             plottedCard: null,
             plottedCardTemp: null,
-            lastSeen: p.lastSeen,
+             lastSeen: now,
             disconnected: false
           }));
           const displayOrder = [oyaIndex, ...players.map(p => p.id).filter(id => id !== oyaIndex)];
@@ -1390,7 +1390,7 @@
             roomId,
             matchMode: mode,
             hostId: selected[0].uid,
-            status: 'WAITING',
+             status: 'PLAYING',
             round: 1,
             oyaIndex,
             playerCount: target,
@@ -1410,9 +1410,11 @@
             skipNextPlayer: false,
             disableNextPlayer: false,
             lastNumericValue: 0,
-            phase: 'PLOT',
-            logs: [`🎯 ランダム${target}人対戦が成立しました！`],
-            displayOrder,
+             phase: 'PLOT',
+             roundTurnOrder: players.map((_, i) => (oyaIndex + i) % target),
+             plotDeadline: now + CARD_SELECT_TIME_MS,
+             plotTimeoutHandledAt: null,
+             logs: [`🎯 ランダム${target}人対戦が成立しました！ゲーム開始！`],
             players
           });
 
@@ -1837,34 +1839,52 @@
         if (!startBtn.dataset.bound) {
           startBtn.dataset.bound = '1';
           startBtn.addEventListener('click', async () => {
-      if (gameState.hostId !== currentUser.uid) return;
-      const maxPlayers = Number(gameState.maxPlayers || gameState.playerCount || 4);
-      const playerCount = gameState.players.filter(p => !p.disconnected).length;
-      if (playerCount < 2 || playerCount > maxPlayers || maxPlayers < 2 || maxPlayers > 4) {
-        alert(`開始には2人以上が必要です。現在は${playerCount}人です。`);
-        return;
-      }
-
-      setBtnLoading('btn-start-game', true);
-      try {
-        gameState.playerCount = playerCount;
-        gameState.targetPoints = Number(gameState.targetPoints || getBaseTargetScore(maxPlayers));
-        gameState.oyaIndex = Math.floor(Math.random() * playerCount);
-        gameState.status = 'PLAYING';
-        gameState.roundLimit = getRoundLimit(playerCount);
-        gameState.baseTargetScore = gameState.targetPoints;
-        const parentId = gameState.oyaIndex;
-        const orderedIds = gameState.players
-          .filter(p => !p.disconnected)
-          .map(p => p.id);
-        gameState.displayOrder = [parentId, ...orderedIds.filter(id => id !== parentId)];
-        setupRoundState();
-        await updateDoc(getRoomRef(currentRoomId), gameState);
-      } catch (error) {
-        console.error(error); alert("ゲームの開始に失敗しました。");
-      } finally {
-        setBtnLoading('btn-start-game', false);
-      }
+            if (!currentUser || !currentRoomId) return;
+            if (!gameState || gameState.hostId !== currentUser.uid) return;
+            setBtnLoading('btn-start-game', true);
+            try {
+              const ref = getRoomRef(currentRoomId);
+              await runTransaction(db, async transaction => {
+                const snap = await transaction.get(ref);
+                if (!snap.exists()) throw new Error('部屋が見つかりません。');
+                const latest = snap.data();
+                if (latest.hostId !== currentUser.uid) throw new Error('ホストのみゲームを開始できます。');
+                if (latest.status !== 'WAITING') return;
+                const maxPlayers = Number(latest.maxPlayers || latest.playerCount || 4);
+                const players = (Array.isArray(latest.players) ? latest.players : [])
+                  .filter(p => p && !p.disconnected)
+                  .map((p, idx) => ({ ...p, id: idx, lastSeen: Number(p.lastSeen || Date.now()) }));
+                const playerCount = players.length;
+                if (playerCount < 2 || playerCount > maxPlayers || maxPlayers < 2 || maxPlayers > 4) {
+                  throw new Error(`開始には2人以上が必要です。現在は${playerCount}人です。`);
+                }
+                const targetPoints = Number(latest.targetPoints || getBaseTargetScore(maxPlayers));
+                const oyaIndex = Math.floor(Math.random() * playerCount);
+                const roundLimit = getRoundLimit(playerCount);
+                const displayOrder = [oyaIndex, ...players.map(p => p.id).filter(id => id !== oyaIndex)];
+                const mode = normalizeSpecialCardMode(latest);
+                const allowedHand = getInitialHand(mode);
+                players.forEach(p => {
+                  if (!Array.isArray(p.hand) || p.hand.length === 0) p.hand = allowedHand.slice();
+                  p.passRights = false; p.plottedCard = null; p.plottedCardTemp = null;
+                });
+                const nextLogs = Array.isArray(latest.logs) ? [...latest.logs] : [];
+                nextLogs.push(`--- 🔔 第 1 ラウンド開始 (親: ${players[oyaIndex].name} / ${playerCount}人戦・目標${targetPoints}pt・全${roundLimit}R) ---`);
+                transaction.update(ref, {
+                  players, playerCount, targetPoints, baseTargetScore: targetPoints, roundLimit,
+                  oyaIndex, displayOrder, status: 'PLAYING', fieldScore: 0, targetScore: targetPoints,
+                  rewardPt: 1, kidokuActivated: false, kidokuExtensionPending: false,
+                  skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
+                  roundTurnOrder: players.map((_, i) => (oyaIndex + i) % playerCount),
+                  plotDeadline: Date.now() + CARD_SELECT_TIME_MS, plotTimeoutHandledAt: null, logs: nextLogs
+                });
+              });
+            } catch (error) {
+              console.error('ゲーム開始失敗:', error);
+              alert('ゲームの開始に失敗しました。\n' + (error?.message || error));
+            } finally {
+              setBtnLoading('btn-start-game', false);
+            }
           });
         }
       }
