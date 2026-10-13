@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット v1.10.7</title>
+  <title>既読スルー・プロット v1.10.9</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -46,7 +46,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.10.7</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.10.9</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -72,7 +72,7 @@
           <p class="text-xs text-slate-500 mt-1 font-bold">ルームID対戦・ランダムマッチに対応しています。</p>
           <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
             <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-            <span class="text-xs text-indigo-600 font-black">1.10.7</span>
+            <span class="text-xs text-indigo-600 font-black">1.10.9</span>
           </div>
         </div>
       </div>
@@ -92,6 +92,23 @@
           <button id="btn-account" class="shrink-0 px-3 py-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl text-xs font-black hover:bg-indigo-100">ログイン</button>
         </div>
       </div>
+
+      <div class="rounded-2xl border-2 border-violet-200 bg-violet-50 p-4 space-y-3">
+        <div class="text-center">
+          <div class="text-lg font-black text-violet-800"><i class="fa-solid fa-robot mr-2"></i>CPU対戦</div>
+          <p class="text-[11px] text-violet-700 mt-1 font-bold">CPUごとに異なる思考タイプで対戦します。</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <label for="cpu-player-count" class="text-xs font-black text-slate-600 shrink-0">対戦人数</label>
+          <select id="cpu-player-count" class="flex-1 p-3 rounded-xl border-2 border-violet-200 bg-white font-black text-slate-700">
+            <option value="2">2人（あなた＋CPU1人）</option>
+            <option value="3">3人（あなた＋CPU2人）</option>
+            <option value="4" selected>4人（あなた＋CPU3人）</option>
+          </select>
+        </div>
+        <button id="btn-start-cpu" class="w-full py-3.5 bg-violet-600 text-white rounded-xl font-black shadow-md hover:bg-violet-700 active:scale-[0.98] transition"><i class="fa-solid fa-play mr-2"></i>CPU対戦を開始</button>
+      </div>
+
 
       <div class="space-y-3 pt-2">
         <button id="btn-create-room" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 active:scale-95 transition-all text-lg disabled:opacity-50 flex items-center justify-center">
@@ -113,25 +130,9 @@
         </button>
       </div>
 
-      <div class="rounded-2xl border-2 border-violet-200 bg-violet-50 p-4 space-y-3">
-        <div class="text-center">
-          <div class="text-lg font-black text-violet-800"><i class="fa-solid fa-robot mr-2"></i>CPU対戦</div>
-          <p class="text-[11px] text-violet-700 mt-1 font-bold">CPUごとに異なる思考タイプで対戦します。</p>
-        </div>
-        <div class="flex items-center gap-3">
-          <label for="cpu-player-count" class="text-xs font-black text-slate-600 shrink-0">対戦人数</label>
-          <select id="cpu-player-count" class="flex-1 p-3 rounded-xl border-2 border-violet-200 bg-white font-black text-slate-700">
-            <option value="2">2人（あなた＋CPU1人）</option>
-            <option value="3">3人（あなた＋CPU2人）</option>
-            <option value="4" selected>4人（あなた＋CPU3人）</option>
-          </select>
-        </div>
-        <button id="btn-start-cpu" class="w-full py-3.5 bg-violet-600 text-white rounded-xl font-black shadow-md hover:bg-violet-700 active:scale-[0.98] transition"><i class="fa-solid fa-play mr-2"></i>CPU対戦を開始</button>
-      </div>
-
       <div class="relative flex py-1 items-center">
         <div class="flex-grow border-t border-slate-200"></div>
-        <span class="flex-shrink-0 mx-4 text-slate-400 text-xs font-black">オンライン対戦</span>
+        <span class="flex-shrink-0 mx-4 text-slate-400 text-xs font-black">ランダム対戦</span>
         <div class="flex-grow border-t border-slate-200"></div>
       </div>
 
@@ -177,7 +178,7 @@
       <div class="text-center mb-5 pt-4">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.10.7</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.10.9</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -376,7 +377,7 @@
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
         <div>
           <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.10.7</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.10.9</p>
         </div>
         <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
       </div>
@@ -588,7 +589,7 @@
     const REVEAL_STEP_INTERVAL_MS = 800; // カードを1枚公開してから次を公開するまで
     const REVEAL_RESULT_PAUSE_MS = 1800; // 最後のカード公開から結果表示まで
     const REVEAL_NEXT_TURN_PAUSE_MS = 1800; // 最後のカード公開から次の手番まで
-    const GAME_VERSION = '1.10.7';
+    const GAME_VERSION = '1.10.9';
     const INITIAL_RATING = 1500;
     const RATING_MATCH_RANGE = 200;
     const RATING_K_2P = 32;
@@ -3068,13 +3069,13 @@
 
     // --- ローカルCPU対戦（オンライン通信とは独立） ---
     const CPU_PERSONALITIES = [
-      { id:'steady', name:'慎重派CPU', choose:(hand,s)=>hand.reduce((best,c,i)=>scoreCpuCard(c,'steady',s)>scoreCpuCard(hand[best],'steady',s)?i:best,0) },
-      { id:'aggressive', name:'強気CPU', choose:(hand,s)=>hand.reduce((best,c,i)=>scoreCpuCard(c,'aggressive',s)>scoreCpuCard(hand[best],'aggressive',s)?i:best,0) },
-      { id:'tactician', name:'戦略家CPU', choose:(hand,s)=>hand.reduce((best,c,i)=>scoreCpuCard(c,'tactician',s)>scoreCpuCard(hand[best],'tactician',s)?i:best,0) },
-      { id:'trickster', name:'妨害CPU', choose:(hand,s)=>hand.reduce((best,c,i)=>scoreCpuCard(c,'trickster',s)>scoreCpuCard(hand[best],'trickster',s)?i:best,0) },
-      { id:'chaotic', name:'気まぐれCPU', choose:(hand,s)=>Math.floor(Math.random()*hand.length) },
-      { id:'counter', name:'逆転狙いCPU', choose:(hand,s)=>hand.reduce((best,c,i)=>scoreCpuCard(c,'counter',s)>scoreCpuCard(hand[best],'counter',s)?i:best,0) },
-      { id:'reader', name:'空気読みCPU', choose:(hand,s)=>hand.reduce((best,c,i)=>scoreCpuCard(c,'reader',s)>scoreCpuCard(hand[best],'reader',s)?i:best,0) }
+      { id:'steady', name:'CPU', choose:(hand,s)=>hand.reduce((best,c,i)=>scoreCpuCard(c,'steady',s)>scoreCpuCard(hand[best],'steady',s)?i:best,0) },
+      { id:'aggressive', name:'CPU', choose:(hand,s)=>hand.reduce((best,c,i)=>scoreCpuCard(c,'aggressive',s)>scoreCpuCard(hand[best],'aggressive',s)?i:best,0) },
+      { id:'tactician', name:'CPU', choose:(hand,s)=>hand.reduce((best,c,i)=>scoreCpuCard(c,'tactician',s)>scoreCpuCard(hand[best],'tactician',s)?i:best,0) },
+      { id:'trickster', name:'CPU', choose:(hand,s)=>hand.reduce((best,c,i)=>scoreCpuCard(c,'trickster',s)>scoreCpuCard(hand[best],'trickster',s)?i:best,0) },
+      { id:'chaotic', name:'CPU', choose:(hand,s)=>Math.floor(Math.random()*hand.length) },
+      { id:'counter', name:'CPU', choose:(hand,s)=>hand.reduce((best,c,i)=>scoreCpuCard(c,'counter',s)>scoreCpuCard(hand[best],'counter',s)?i:best,0) },
+      { id:'reader', name:'CPU', choose:(hand,s)=>hand.reduce((best,c,i)=>scoreCpuCard(c,'reader',s)>scoreCpuCard(hand[best],'reader',s)?i:best,0) }
     ];
     function scoreCpuCard(card, type, state) {
       const remaining = state.targetScore - state.fieldScore;
