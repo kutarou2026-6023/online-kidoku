@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット v1.10.9</title>
+  <title>既読スルー・プロット v1.10.11</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -46,7 +46,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.10.9</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.10.11</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -72,7 +72,7 @@
           <p class="text-xs text-slate-500 mt-1 font-bold">ルームID対戦・ランダムマッチに対応しています。</p>
           <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
             <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-            <span class="text-xs text-indigo-600 font-black">1.10.9</span>
+            <span class="text-xs text-indigo-600 font-black">1.10.11</span>
           </div>
         </div>
       </div>
@@ -178,7 +178,7 @@
       <div class="text-center mb-5 pt-4">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.10.9</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.10.11</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -377,7 +377,7 @@
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
         <div>
           <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.10.9</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.10.11</p>
         </div>
         <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
       </div>
@@ -394,7 +394,7 @@
           <h3 class="text-sm font-black text-indigo-700 mb-2">🎯 基本ルール</h3>
           <div class="bg-slate-50 rounded-2xl border border-slate-200 p-3 space-y-2 leading-relaxed">
             <p>・各ラウンドの<strong>場の合計点</strong>を、目標点ぴったりにするか、目標を超えたときの勝者条件を狙います。</p>
-            <p>・全員がカードを1枚提出すると、親から順番にカードを公開して効果を解決します。</p>
+            <p>・全員がカードを1枚提出すると、並んだ順に左からカードを公開して効果を解決します。</p>
             <p>・数字カードは場の合計を増やします。<strong>+1 / +2 / +3</strong>があります。</p>
             <p>・目標点ぴったりなら、そのカードを出したプレイヤーがそのラウンドの報酬点を獲得します。</p>
             <p>・目標点を超えた場合は、<strong>直前のプレイヤー</strong>がそのラウンドの報酬点を獲得します。</p>
@@ -589,7 +589,7 @@
     const REVEAL_STEP_INTERVAL_MS = 800; // カードを1枚公開してから次を公開するまで
     const REVEAL_RESULT_PAUSE_MS = 1800; // 最後のカード公開から結果表示まで
     const REVEAL_NEXT_TURN_PAUSE_MS = 1800; // 最後のカード公開から次の手番まで
-    const GAME_VERSION = '1.10.9';
+    const GAME_VERSION = '1.10.11';
     const INITIAL_RATING = 1500;
     const RATING_MATCH_RANGE = 200;
     const RATING_K_2P = 32;
@@ -685,13 +685,26 @@
     }
 
     function getTurnOrder(state) {
+      // カード公開順は、画面で並んでいる左から右の順番に統一する。
+      // displayOrder は親を左端に置いた後、その並びを固定したもの。
+      const players = state?.players || [];
+      const byId = new Map(players.map(player => [player.id, player]));
       const order = [];
-      const count = state.players.length;
-      if (!count) return order;
-      for (let i = 0; i < count; i++) {
-        const idx = (state.oyaIndex + i) % count;
-        if (!state.players[idx].disconnected) order.push(idx);
-      }
+      const seen = new Set();
+      getDisplayOrder(state || { players: [] }).forEach(id => {
+        const player = byId.get(id);
+        if (player && !player.disconnected && !seen.has(id)) {
+          order.push(id);
+          seen.add(id);
+        }
+      });
+      // 既存データに表示順が不足していても、参加中プレイヤーを漏らさない。
+      players.forEach(player => {
+        if (player && !player.disconnected && !seen.has(player.id)) {
+          order.push(player.id);
+          seen.add(player.id);
+        }
+      });
       return order;
     }
 
@@ -1722,7 +1735,7 @@
             disableNextPlayer: false,
             lastNumericValue: 0,
             phase: 'PLOT',
-            roundTurnOrder: players.map((_, i) => (oyaIndex + i) % target),
+            roundTurnOrder: displayOrder.filter(id => !players[id]?.disconnected),
             plotDeadline: now + CARD_SELECT_TIME_MS,
             plotTimeoutHandledAt: null,
             logs: [`🎯 ランダム${target}人対戦が成立しました！ゲーム開始！`],
@@ -2249,7 +2262,7 @@
                   oyaIndex, displayOrder, status: 'PLAYING', fieldScore: 0, targetScore: targetPoints,
                   rewardPt: 1, kidokuActivated: false, kidokuExtensionPending: false,
                   skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
-                  roundTurnOrder: players.map((_, i) => (oyaIndex + i) % playerCount),
+                  roundTurnOrder: displayOrder.filter(id => !players[id]?.disconnected),
                   plotDeadline: latest.matchMode ? Date.now() + CARD_SELECT_TIME_MS : null, plotTimeoutHandledAt: null, logs: nextLogs
                 });
               });
@@ -2646,7 +2659,7 @@
           if (!allSubmitted) return;
 
           const logs = Array.isArray(latest.logs) ? [...latest.logs] : [];
-          logs.push('🃏 全員のカードが出揃いました。親から順にオープンします！');
+          logs.push('🃏 全員のカードが出揃いました。左から順にオープンします！');
           transaction.update(ref, {
             phase: 'REVEAL_0',
             plotDeadline: null,
@@ -2839,9 +2852,7 @@
                 hand: Array.isArray(p.hand) ? [...p.hand] : []
               }))
             : [];
-          const turnOrder = Array.isArray(latest.roundTurnOrder) && latest.roundTurnOrder.length
-            ? [...latest.roundTurnOrder]
-            : getTurnOrder(latest);
+          const turnOrder = getTurnOrder(latest);
           if (turnOrder.length < 2 || step >= turnOrder.length) return;
 
           const pIdx = turnOrder[step];
@@ -3108,9 +3119,9 @@
       const personalities = CPU_PERSONALITIES.slice().sort(()=>Math.random()-0.5).slice(0,count-1);
       const names = document.getElementById('player-name').value.trim() || 'あなた';
       const players = [{id:0,uid:humanUid,name:names,score:0,hand:getInitialHand('all'),passRights:false,plottedCard:null,plottedCardTemp:null,disconnected:false}];
-      personalities.forEach((personality,i)=>players.push({id:i+1,uid:`cpu-${personality.id}`,name:personality.name,cpuType:personality.id,score:0,hand:getInitialHand('all'),passRights:false,plottedCard:null,plottedCardTemp:null,disconnected:false}));
+      personalities.forEach((personality,i)=>players.push({id:i+1,uid:`cpu-${personality.id}`,name:`CPU${i+1}`,cpuType:personality.id,score:0,hand:getInitialHand('all'),passRights:false,plottedCard:null,plottedCardTemp:null,disconnected:false}));
       const oyaIndex = Math.floor(Math.random()*count);
-      gameState = {roomId:'CPU_LOCAL',status:'PLAYING',phase:'PLOT',round:1,roundLimit:getRoundLimit(count),playerCount:count,players,hostId:humanUid,oyaIndex,displayOrder:[oyaIndex,...players.map(p=>p.id).filter(id=>id!==oyaIndex)],roundTurnOrder:players.map((_,i)=>(oyaIndex+i)%count),fieldScore:0,targetScore:getBaseTargetScore(count),baseTargetScore:getBaseTargetScore(count),targetPoints:getBaseTargetScore(count),rewardPt:1,kidokuActivated:false,kidokuExtensionPending:false,skipNextPlayer:false,disableNextPlayer:false,lastNumericValue:0,plotDeadline:null,plotTimeoutHandledAt:null,logs:[`🤖 CPU対戦を開始しました（${count}人戦）。CPUの思考タイプは毎回ランダムに選ばれます。`]};
+      gameState = {roomId:'CPU_LOCAL',status:'PLAYING',phase:'PLOT',round:1,roundLimit:getRoundLimit(count),playerCount:count,players,hostId:humanUid,oyaIndex,displayOrder:[oyaIndex,...players.map(p=>p.id).filter(id=>id!==oyaIndex)],roundTurnOrder:[oyaIndex,...players.map(p=>p.id).filter(id=>id!==oyaIndex)],fieldScore:0,targetScore:getBaseTargetScore(count),baseTargetScore:getBaseTargetScore(count),targetPoints:getBaseTargetScore(count),rewardPt:1,kidokuActivated:false,kidokuExtensionPending:false,skipNextPlayer:false,disableNextPlayer:false,lastNumericValue:0,plotDeadline:null,plotTimeoutHandledAt:null,logs:[`🤖 CPU対戦を開始しました（${count}人戦）。CPUの思考タイプは毎回ランダムに選ばれます。`]};
       players.forEach(p=>{ if(p.id!==0) p.hand=getInitialHand('all'); });
       gameState.logs.push(`--- 🔔 第 1 ラウンド開始 (親: ${players[oyaIndex].name} / ${count}人戦・目標${gameState.targetScore}pt・全${gameState.roundLimit}R) ---`);
       selectedHandIndex=null; isUIInitialized=false; cpuDiagSetVisible(true); cpuDiagLog('CPU_GAME_STARTED', { count, hostId: humanUid, oyaIndex }); updateGameUI();
@@ -3135,7 +3146,7 @@
         const allSubmitted = gameState.players.every(p=>p.disconnected || p.plottedCard==='FACE_DOWN');
         cpuDiagLog('ALL_SUBMITTED_CHECK', { allSubmitted, statuses: gameState.players.map(p=>({id:p.id, plottedCard:p.plottedCard, hasTemp:p.plottedCardTemp != null})) });
         if (allSubmitted) {
-          gameState.phase='REVEAL_0'; gameState.logs.push('🃏 全員のカードが出揃いました。親から順にオープンします！');
+          gameState.phase='REVEAL_0'; gameState.logs.push('🃏 全員のカードが出揃いました。左から順にオープンします！');
           cpuDiagLog('REVEAL_PHASE_SET', { phase: gameState.phase }); updateGameUI();
           if (cpuRevealTimer) clearTimeout(cpuRevealTimer);
           cpuDiagLog('REVEAL_TIMER_SCHEDULED', { step:0, delayMs:REVEAL_START_DELAY_MS });
@@ -3148,7 +3159,7 @@
     function processCpuRevealStep(step) {
       cpuDiagLog('REVEAL_STEP_ENTER', { step, guard: { isCpuMode, hasGameState: !!gameState, status: gameState?.status } });
       if (!isCpuMode || !gameState || gameState.status!=='PLAYING') { cpuDiagLog('REVEAL_STEP_ABORT_GUARD', { step }); return; }
-      const order=gameState.roundTurnOrder || getTurnOrder(gameState);
+      const order=getTurnOrder(gameState);
       if (step>=order.length) { finishCpuTurn(); return; }
       const pIdx=order[step], p=gameState.players[pIdx];
       if (!p) { cpuDiagLog('REVEAL_PLAYER_MISSING', { step, pIdx, order }); finishCpuTurn(); return; }
