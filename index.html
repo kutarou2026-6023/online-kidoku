@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット v1.10.12</title>
+  <title>既読スルー・プロット v1.10.14</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -55,7 +55,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.10.12</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.10.14</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -81,7 +81,7 @@
           <p class="text-xs text-slate-500 mt-1 font-bold">ルームID対戦・ランダムマッチに対応しています。</p>
           <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
             <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-            <span class="text-xs text-indigo-600 font-black">1.10.12</span>
+            <span class="text-xs text-indigo-600 font-black">1.10.14</span>
           </div>
         </div>
       </div>
@@ -187,7 +187,7 @@
       <div class="text-center mb-5 pt-4">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.10.12</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.10.14</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -386,7 +386,7 @@
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
         <div>
           <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.10.12</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.10.14</p>
         </div>
         <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
       </div>
@@ -424,7 +424,7 @@
           <div class="bg-rose-50 rounded-2xl border border-rose-100 p-3 leading-relaxed space-y-2">
             <p>・<strong>親だけ</strong>が有効に使える特殊カードです。</p>
             <p>・既読スルーを宣言した後、基本目標点に到達すると<strong>既読スルー成功</strong>。親が1ptを獲得し、目標が<strong>基本目標の2倍</strong>、報酬が<strong>2pt</strong>になります。</p>
-            <p>・宣言したターンで基本目標点に届かなかった場合は<strong>そのターンで即終了</strong>し、参加中の全員に1ptのペナルティが入ります。その後は通常状態に戻ります。</p>
+            <p>・宣言したターンで基本目標点に届かなかった場合は<strong>ラウンドを強制終了</strong>し、親以外の参加プレイヤーに1ptのペナルティが入ります。ラウンド終了画面で結果を表示します。</p>
             <p>・成功後は罰則はありません。以降は<strong>2ptを誰が獲得するか</strong>を競う延長戦です。</p>
           </div>
         </section>
@@ -503,12 +503,12 @@
 
   <!-- ゲーム結果・ラウンドモーダル -->
   <div id="modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border border-slate-100 transform transition-all scale-95">
-      <div class="text-4xl mb-2">🏆</div>
-      <h2 id="modal-title" class="text-xl font-extrabold text-slate-800 mb-1">ラウンド終了</h2>
-      <p id="modal-desc" class="text-xs text-slate-500 mb-4">結果の詳細がここに表示されます</p>
+    <div class="bg-white rounded-3xl w-full max-w-md h-[85vh] max-h-[90dvh] p-5 sm:p-6 text-center shadow-2xl border border-slate-100 flex flex-col overflow-hidden transform transition-all scale-95">
+      <div class="text-5xl mb-2 flex-shrink-0">🏆</div>
+      <h2 id="modal-title" class="text-2xl sm:text-3xl font-black text-slate-800 mb-2 flex-shrink-0">ラウンド終了</h2>
+      <p id="modal-desc" class="text-sm sm:text-base text-slate-600 mb-4 flex-shrink-0">結果の詳細がここに表示されます</p>
 
-      <div class="bg-slate-50 rounded-2xl p-3 mb-4 space-y-2 text-left text-xs font-bold border border-slate-100" id="modal-scores"></div>
+      <div class="bg-slate-50 rounded-2xl p-3 sm:p-4 mb-4 space-y-2 text-left text-sm font-bold border border-slate-200 flex-1 overflow-y-auto min-h-0" id="modal-scores"></div>
 
       <!-- ホスト用ボタン -->
       <button id="modal-next-btn" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-2xl shadow-md transition hidden flex justify-center items-center">
@@ -595,10 +595,10 @@
     const CARD_SELECT_TIME_MS = 20000; // 手札選択の制限時間（20秒）
     const CARD_SELECT_TIMEOUT_GRACE_MS = 1000; // 本人の自動提出を優先する猶予
     const REVEAL_START_DELAY_MS = 500; // 全員提出後、最初のカード公開まで
-    const REVEAL_STEP_INTERVAL_MS = 800; // カードを1枚公開してから次を公開するまで
-    const REVEAL_RESULT_PAUSE_MS = 1800; // 最後のカード公開から結果表示まで
-    const REVEAL_NEXT_TURN_PAUSE_MS = 1800; // 最後のカード公開から次の手番まで
-    const GAME_VERSION = '1.10.12';
+    const REVEAL_STEP_INTERVAL_MS = 700; // 旧版のテンポを参考に、カード公開間隔を約0.7秒に
+    const REVEAL_RESULT_PAUSE_MS = 1000; // 最後のカード公開後、結果を表示するまで約1秒待つ
+    const REVEAL_NEXT_TURN_PAUSE_MS = 1400; // 最後のカード公開を見届けてから次の手番へ
+    const GAME_VERSION = '1.10.14';
     const INITIAL_RATING = 1500;
     const RATING_MATCH_RANGE = 200;
     const RATING_K_2P = 32;
@@ -2298,6 +2298,7 @@
       const roundLimit = getRoundLimit(playerCount);
 
       gameState.fieldScore = 0;
+      gameState.roundStartScores = gameState.players.map(p => Number(p.score || 0));
       gameState.baseTargetScore = baseTarget;
       gameState.roundLimit = roundLimit;
       gameState.targetScore = baseTarget;
@@ -3031,38 +3032,58 @@
               phase: nextPhase
             });
           } else {
-            // 最後の公開手番。既読スルーが基本目標に届かなかった場合は全員+1pt。
-            if (latest.kidokuActivated &&
-                latest.targetScore === baseTargetScore &&
-                latest.fieldScore < baseTargetScore) {
-              players.forEach(player => {
-                if (!player.disconnected) player.score = Number(player.score || 0) + 1;
+            // 最後の公開手番。既読スルー失敗時は親以外に+1ptを与え、ラウンドを強制終了する。
+            const kidokuFailed = !!latest.kidokuActivated &&
+              latest.targetScore === baseTargetScore &&
+              latest.fieldScore < baseTargetScore;
+            if (kidokuFailed) {
+              players.forEach((player, playerIndex) => {
+                if (!player.disconnected && playerIndex !== Number(latest.oyaIndex)) {
+                  player.score = Number(player.score || 0) + 1;
+                }
               });
-              logs.push(`⚠️ 【既読スルー失敗】${baseTargetScore}ptに届かなかったため、参加中の全員に <strong>+1pt</strong> のペナルティ！このターンを終了します。`);
+              logs.push(`⚠️ 【既読スルー失敗】${baseTargetScore}ptに届かなかったため、親以外の参加プレイヤーに <strong>+1pt</strong> のペナルティ！ラウンドを強制終了します。`);
               latest.kidokuActivated = false;
               latest.kidokuExtensionPending = false;
               latest.targetScore = baseTargetScore;
               latest.rewardPt = 1;
+              nextPhase = 'REVEAL_WAIT_RESULT';
+              shouldRoundEnd = true;
+              transaction.update(roomRef, {
+                players,
+                fieldScore: latest.fieldScore,
+                targetScore: latest.targetScore,
+                rewardPt: latest.rewardPt,
+                baseTargetScore: latest.baseTargetScore,
+                kidokuActivated: false,
+                kidokuExtensionPending: false,
+                skipNextPlayer: !!latest.skipNextPlayer,
+                disableNextPlayer: !!latest.disableNextPlayer,
+                lastNumericValue: Number(latest.lastNumericValue || 0),
+                phase: nextPhase,
+                revealWaitUntil: Date.now() + REVEAL_RESULT_PAUSE_MS,
+                logs
+              });
+            } else {
+              // 最後のカードは表示したまま待機し、時間経過後に次のPLOTへ進む。
+              nextPhase = 'REVEAL_WAIT_PLOT';
+              shouldAdvancePlot = true;
+              transaction.update(roomRef, {
+                players,
+                fieldScore: latest.fieldScore,
+                targetScore: latest.targetScore,
+                rewardPt: latest.rewardPt,
+                baseTargetScore: latest.baseTargetScore,
+                kidokuActivated: !!latest.kidokuActivated,
+                kidokuExtensionPending: !!latest.kidokuExtensionPending,
+                skipNextPlayer: !!latest.skipNextPlayer,
+                disableNextPlayer: !!latest.disableNextPlayer,
+                lastNumericValue: Number(latest.lastNumericValue || 0),
+                phase: nextPhase,
+                revealWaitUntil: Date.now() + REVEAL_NEXT_TURN_PAUSE_MS,
+                logs
+              });
             }
-
-            // 最後のカードは表示したまま待機し、時間経過後に次のPLOTへ進む。
-            nextPhase = 'REVEAL_WAIT_PLOT';
-            shouldAdvancePlot = true;
-            transaction.update(roomRef, {
-              players,
-              fieldScore: latest.fieldScore,
-              targetScore: latest.targetScore,
-              rewardPt: latest.rewardPt,
-              baseTargetScore: latest.baseTargetScore,
-              kidokuActivated: !!latest.kidokuActivated,
-              kidokuExtensionPending: !!latest.kidokuExtensionPending,
-              skipNextPlayer: !!latest.skipNextPlayer,
-              disableNextPlayer: !!latest.disableNextPlayer,
-              lastNumericValue: Number(latest.lastNumericValue || 0),
-              phase: nextPhase,
-              revealWaitUntil: Date.now() + REVEAL_NEXT_TURN_PAUSE_MS,
-              logs
-            });
           }
         });
 
@@ -3199,7 +3220,14 @@
     function finishCpuTurn(){
       cpuDiagLog('FINISH_CPU_TURN_BEGIN');
       const base=gameState.baseTargetScore;
-      if(gameState.kidokuActivated && gameState.targetScore===base && gameState.fieldScore<base){gameState.players.forEach(p=>p.score++);gameState.logs.push(`⚠️ 【既読スルー失敗】${base}ptに届かなかったため、全員に+1ptのペナルティ！`);gameState.kidokuActivated=false;gameState.targetScore=base;gameState.rewardPt=1;}
+      const kidokuFailed = !!gameState.kidokuActivated && gameState.targetScore===base && gameState.fieldScore<base;
+      if(kidokuFailed){
+        gameState.players.forEach((p, idx)=>{ if(idx!==Number(gameState.oyaIndex)) p.score=Number(p.score||0)+1; });
+        gameState.logs.push(`⚠️ 【既読スルー失敗】${base}ptに届かなかったため、親以外のプレイヤーに <strong>+1pt</strong> のペナルティ！ラウンドを強制終了します。`);
+        gameState.kidokuActivated=false;gameState.targetScore=base;gameState.rewardPt=1;
+        gameState.players.forEach(p=>{p.plottedCard=null;p.plottedCardTemp=null;});
+        gameState.skipNextPlayer=false;gameState.disableNextPlayer=false;gameState.phase='ROUND_END';selectedHandIndex=null;updateGameUI();cpuDiagLog('KIDOKU_FAILURE_FORCED_ROUND_END');return;
+      }
       // ターン終了時はカードと一時効果だけをリセットし、場の合計はラウンド終了まで保持する。
       // fieldScore / lastNumericValue は、送信取消の効果と次ラウンド開始時の初期化でのみ変更する。
       gameState.players.forEach(p=>{p.plottedCard=null;p.plottedCardTemp=null;});gameState.skipNextPlayer=false;gameState.disableNextPlayer=false;gameState.phase='PLOT';gameState.roundTurnOrder=getTurnOrder(gameState);gameState.logs.push('--- 次のターン ---');selectedHandIndex=null;updateGameUI();cpuDiagLog('FINISH_CPU_TURN_COMPLETE');
@@ -3207,11 +3235,25 @@
 
     // --- Modal & Next Round ---
 
-    function renderScoresHtml(sorted) {
-      return sorted.map((p, rank) => `<div class="flex justify-between items-center py-1 border-b border-slate-200 last:border-0">
-        <span>${rank === 0 ? '👑' : `#${rank+1}`} ${p.name}</span>
-        <span class="text-indigo-600 font-extrabold">${p.score} pt</span>
-      </div>`).join('');
+    function renderScoresHtml(sorted, showRoundGain = false) {
+      const roundStartScores = Array.isArray(gameState?.roundStartScores) ? gameState.roundStartScores : [];
+      return sorted.map((p, rank) => {
+        const playerIndex = (gameState.players || []).indexOf(p);
+        const startingScore = Number(roundStartScores[playerIndex] ?? 0);
+        const roundGain = Math.max(0, Number(p.score || 0) - startingScore);
+        const leader = rank === 0;
+        if (showRoundGain) {
+          const gainColor = roundGain > 0 ? 'text-emerald-700 bg-emerald-50' : 'text-slate-500 bg-slate-100';
+          return `<div class="flex items-center justify-between gap-3 p-3 sm:p-4 rounded-xl border ${leader ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'} mb-2 last:mb-0">
+            <div class="min-w-0 text-left"><div class="text-base sm:text-lg font-black text-slate-800 truncate">${leader ? '👑' : `#${rank+1}`} ${p.name}</div><div class="text-xs sm:text-sm text-slate-500 mt-1">累計 ${Number(p.score || 0)} pt</div></div>
+            <div class="shrink-0 text-right"><div class="text-[11px] sm:text-xs font-bold text-slate-500 mb-1">今回獲得</div><div class="text-xl sm:text-2xl font-black ${gainColor} rounded-lg px-3 py-1">${roundGain > 0 ? '+' : ''}${roundGain} pt</div></div>
+          </div>`;
+        }
+        return `<div class="flex items-center justify-between gap-3 p-3 sm:p-4 rounded-xl border ${leader ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'} mb-2 last:mb-0">
+          <span class="text-base sm:text-lg font-black text-slate-800">${leader ? '👑' : `#${rank+1}`} ${p.name}</span>
+          <span class="text-xl sm:text-2xl text-indigo-700 font-black">${Number(p.score || 0)} <span class="text-sm">pt</span></span>
+        </div>`;
+      }).join('');
     }
 
     function showModalUI() {
@@ -3221,6 +3263,9 @@
       const nextBtn = document.getElementById('modal-next-btn');
       const waitMsg = document.getElementById('modal-waiting-msg');
       const sorted = [...gameState.players].filter(p => !p.disconnected).sort((a,b) => b.score - a.score);
+      if (!Array.isArray(gameState.roundStartScores)) {
+        gameState.roundStartScores = gameState.players.map(p => Number(p.score || 0));
+      }
 
       if (gameState.phase === 'FINAL_RESULT') {
         title.textContent = '🏆 総合結果';
@@ -3248,9 +3293,9 @@
         return;
       }
 
-      title.textContent = 'ラウンド終了';
-      desc.textContent = 'このラウンドの結果';
-      scoresBox.innerHTML = renderScoresHtml(sorted);
+      title.textContent = `第 ${gameState.round} ラウンド終了`;
+      desc.textContent = '今回獲得したポイントと、現在までの累計を確認できます。';
+      scoresBox.innerHTML = `<div class="text-xs sm:text-sm font-black text-slate-500 mb-3">今回の獲得ポイント（上から順位順）</div>${renderScoresHtml(sorted, true)}`;
       const roundLimit = gameState.roundLimit || getRoundLimit(gameState.playerCount || gameState.players.length || 4);
       if (isCpuMode || gameState.hostId === currentUser?.uid) {
         nextBtn.classList.remove('hidden'); waitMsg.classList.add('hidden');
