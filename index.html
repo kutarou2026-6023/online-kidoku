@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット v2.0.0</title>
+  <title>既読スルー・プロット v2.0.1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -55,7 +55,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v2.0.0</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v2.0.1</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -81,7 +81,7 @@
           <p class="text-xs text-slate-500 mt-1 font-bold">ルームID対戦・ランダムマッチに対応しています。</p>
           <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
             <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-            <span class="text-xs text-indigo-600 font-black">2.0.0</span>
+            <span class="text-xs text-indigo-600 font-black">2.0.1</span>
           </div>
         </div>
       </div>
@@ -187,7 +187,7 @@
       <div class="text-center mb-5 pt-4">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v2.0.0</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v2.0.1</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -353,7 +353,7 @@
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
         <div>
           <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v2.0.0</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v2.0.1</p>
         </div>
         <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
       </div>
@@ -566,7 +566,7 @@
     const REVEAL_STEP_INTERVAL_MS = 700; // 旧版のテンポを参考に、カード公開間隔を約0.7秒に
     const REVEAL_RESULT_PAUSE_MS = 1000; // 最後のカード公開後、結果を表示するまで約1秒待つ
     const REVEAL_NEXT_TURN_PAUSE_MS = 1400; // 最後のカード公開を見届けてから次の手番へ
-    const GAME_VERSION = '2.0.0';
+    const GAME_VERSION = '2.0.1';
     const INITIAL_RATING = 1500;
     const RATING_MATCH_RANGE = 200;
     const RATING_K_2P = 32;
@@ -589,6 +589,104 @@
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
     let previousRoomCleanupDoneForUid = null;
+
+    // --- Random matchmaking helpers ---
+    // Each mode uses one Firestore document whose `waiting` field is an array of player records.
+    function getMatchmakingPoolRef(mode) {
+      if (!Object.prototype.hasOwnProperty.call(MATCH_MODES, mode)) {
+        throw new Error(`未対応のマッチングモードです: ${mode}`);
+      }
+      return doc(db, 'artifacts', appId, 'public', 'data', 'kidoku_matchmaking', mode);
+    }
+
+    function getMatchmakingRoomsQuery(mode) {
+      if (!Object.prototype.hasOwnProperty.call(MATCH_MODES, mode)) {
+        throw new Error(`未対応のマッチングモードです: ${mode}`);
+      }
+      return query(
+        collection(db, 'artifacts', appId, 'public', 'data', 'kidoku_rooms'),
+        where('matchMode', '==', mode),
+        where('status', '==', 'PLAYING')
+      );
+    }
+
+    function getCleanWaitingList(data, now = Date.now()) {
+      const source = Array.isArray(data?.waiting) ? data.waiting : [];
+      const seen = new Set();
+      const cutoff = now - DISCONNECT_TIMEOUT_MS;
+      const result = [];
+      for (const entry of source) {
+        if (!entry || typeof entry.uid !== 'string' || !entry.uid.trim()) continue;
+        if (seen.has(entry.uid)) continue;
+        const lastSeen = Number(entry.lastSeen);
+        if (!Number.isFinite(lastSeen) || lastSeen < cutoff) continue;
+        if (entry.status && entry.status !== 'WAITING') continue;
+        seen.add(entry.uid);
+        result.push({ ...entry, status: 'WAITING', lastSeen });
+      }
+      return result;
+    }
+
+    function refreshMatchmakingCountUI(mode = null) {
+      for (const key of Object.keys(MATCH_MODES)) {
+        const total = Math.max(0, Number(matchmakingWaitingCounts[key] || 0)) +
+          Math.max(0, Number(matchmakingRoomCounts[key] || 0));
+        const suffix = MATCH_MODES[key] === 2 ? '2' : '4';
+        const element = document.getElementById(`match-count-${suffix}`);
+        if (element) element.textContent = `${total}人が待機・対戦中`;
+      }
+      // 個別モードの人数更新が、別モードで待機中の表示を上書きしないようにする。
+      const activeMode = matchmakingMode;
+      if (activeMode && MATCH_MODES[activeMode] && (!mode || mode === activeMode)) {
+        const total = Math.max(0, Number(matchmakingWaitingCounts[activeMode] || 0)) +
+          Math.max(0, Number(matchmakingRoomCounts[activeMode] || 0));
+        const countEl = document.getElementById('matchmaking-count');
+        if (countEl) countEl.textContent = `${total}人`;
+      }
+    }
+
+    function stopMatchmakingTimers() {
+      if (matchmakingHeartbeatTimer) {
+        clearInterval(matchmakingHeartbeatTimer);
+        matchmakingHeartbeatTimer = null;
+      }
+      if (matchmakingRoomDiscoveryUnsubscribe) {
+        matchmakingRoomDiscoveryUnsubscribe();
+        matchmakingRoomDiscoveryUnsubscribe = null;
+      }
+    }
+
+    function startMatchmakingLobbyListeners() {
+      if (!isFirebaseReady || !currentUser?.isAnonymous || matchmakingPoolUnsubscribes.length) return;
+
+      for (const mode of Object.keys(MATCH_MODES)) {
+        const poolUnsubscribe = onSnapshot(getMatchmakingPoolRef(mode), snap => {
+          matchmakingWaitingCounts[mode] = snap.exists()
+            ? getCleanWaitingList(snap.data(), Date.now()).length
+            : 0;
+          refreshMatchmakingCountUI(mode);
+        }, error => {
+          console.warn(`ランダム${MATCH_MODES[mode]}人対戦の待機人数取得失敗:`, error?.code || error, error?.message || '');
+        });
+        matchmakingPoolUnsubscribes.push(poolUnsubscribe);
+
+        const roomsUnsubscribe = onSnapshot(getMatchmakingRoomsQuery(mode), snap => {
+          let playersInProgress = 0;
+          snap.forEach(roomSnap => {
+            const room = roomSnap.data() || {};
+            if (room.matchMode !== mode || room.status !== 'PLAYING') return;
+            const players = Array.isArray(room.players) ? room.players : [];
+            playersInProgress += players.filter(player => player && !player.disconnected).length;
+          });
+          matchmakingRoomCounts[mode] = playersInProgress;
+          refreshMatchmakingCountUI(mode);
+        }, error => {
+          console.warn(`ランダム${MATCH_MODES[mode]}人対戦の対戦人数取得失敗:`, error?.code || error, error?.message || '');
+        });
+        matchmakingPoolUnsubscribes.push(roomsUnsubscribe);
+      }
+      refreshMatchmakingCountUI();
+    }
 
     function getPlayerName() {
       const input = document.getElementById('player-name');
@@ -1088,6 +1186,7 @@
         } else { currentProfile = null; }
         if (user) {
           void cleanupPreviousRoomSession();
+          if (user.isAnonymous) startMatchmakingLobbyListeners();
         }
         updateAccountUI();
         const createBtn = document.getElementById('btn-create-room');
@@ -1096,13 +1195,7 @@
         if (joinBtn) joinBtn.disabled = false;
       });
       initAuth();
-      // ロビー人数表示用リスナーは現在このビルドに未実装のため、
-      // 未定義関数の呼び出しで後続のゲーム操作イベント登録が止まらないようにする。
-      if (typeof startMatchmakingLobbyListeners === 'function') {
-        startMatchmakingLobbyListeners();
-      } else {
-        console.warn('ロビー人数表示リスナーは未設定です。対戦操作の初期化は続行します。');
-      }
+      // ロビー人数の監視は、匿名認証の状態が確定してから開始する。
     } else {
       // Firebase初期化に失敗しているため、作成/参加操作は押せるままにして原因を表示する。
       const createBtn = document.getElementById('btn-create-room');
@@ -1234,7 +1327,6 @@
         if (firebaseAuthError || !isFirebaseReady) {
           showRoomActionError('ランダム対戦を開始できません。', firebaseAuthError || { code: 'online-unavailable' });
         } else {
-          alert('匿名プレイヤーを準備しています。少し待ってからもう一度お試しください。');
           // アカウント登録UIは廃止済み。匿名認証の準備を待つ案内のみ表示する。
           alert('匿名プレイヤーを準備しています。少し待ってからもう一度お試しください。');
         }
