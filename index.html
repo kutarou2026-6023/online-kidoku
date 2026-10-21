@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット v2.0.1</title>
+  <title>既読スルー・プロット v2.0.2</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -55,7 +55,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v2.0.1</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v2.0.2</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -81,7 +81,7 @@
           <p class="text-xs text-slate-500 mt-1 font-bold">ルームID対戦・ランダムマッチに対応しています。</p>
           <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
             <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-            <span class="text-xs text-indigo-600 font-black">2.0.1</span>
+            <span class="text-xs text-indigo-600 font-black">2.0.2</span>
           </div>
         </div>
       </div>
@@ -187,7 +187,7 @@
       <div class="text-center mb-5 pt-4">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v2.0.1</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v2.0.2</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -353,7 +353,7 @@
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
         <div>
           <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v2.0.1</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v2.0.2</p>
         </div>
         <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
       </div>
@@ -566,7 +566,7 @@
     const REVEAL_STEP_INTERVAL_MS = 700; // 旧版のテンポを参考に、カード公開間隔を約0.7秒に
     const REVEAL_RESULT_PAUSE_MS = 1000; // 最後のカード公開後、結果を表示するまで約1秒待つ
     const REVEAL_NEXT_TURN_PAUSE_MS = 1400; // 最後のカード公開を見届けてから次の手番へ
-    const GAME_VERSION = '2.0.1';
+    const GAME_VERSION = '2.0.2';
     const INITIAL_RATING = 1500;
     const RATING_MATCH_RANGE = 200;
     const RATING_K_2P = 32;
@@ -1202,6 +1202,52 @@
       const joinBtn = document.getElementById('btn-join-room');
       if (createBtn) createBtn.disabled = false;
       if (joinBtn) joinBtn.disabled = false;
+    }
+
+    // --- Shared UI helpers ---
+    // 画面切り替え。ゲーム内で使用する画面だけを切り替え、対象以外を非表示にする。
+    function switchScreen(screenId) {
+      const screenIds = ['screen-lobby', 'screen-matchmaking', 'screen-waiting', 'screen-game'];
+      if (!screenIds.includes(screenId)) {
+        console.warn('switchScreen: 未知の画面IDです:', screenId);
+        return false;
+      }
+      const target = document.getElementById(screenId);
+      if (!target) {
+        console.error('switchScreen: 画面要素が見つかりません:', screenId);
+        return false;
+      }
+      for (const id of screenIds) {
+        const screen = document.getElementById(id);
+        if (screen) screen.classList.toggle('hidden', id !== screenId);
+      }
+      return true;
+    }
+
+    // 通信中の二重操作を防ぐ。元の表示とdisabled状態を保存して復元する。
+    function setBtnLoading(buttonId, loading) {
+      const button = document.getElementById(buttonId);
+      if (!button) {
+        console.warn('setBtnLoading: ボタン要素が見つかりません:', buttonId);
+        return;
+      }
+      if (loading) {
+        if (button.dataset.loadingOriginalDisabled === undefined) {
+          button.dataset.loadingOriginalDisabled = button.disabled ? 'true' : 'false';
+        }
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        button.classList.add('opacity-60', 'cursor-wait');
+      } else {
+        if (button.dataset.loadingOriginalDisabled !== undefined) {
+          button.disabled = button.dataset.loadingOriginalDisabled === 'true';
+          delete button.dataset.loadingOriginalDisabled;
+        } else {
+          button.disabled = false;
+        }
+        button.removeAttribute('aria-busy');
+        button.classList.remove('opacity-60', 'cursor-wait');
+      }
     }
 
     function getRoomRef(roomId) {
