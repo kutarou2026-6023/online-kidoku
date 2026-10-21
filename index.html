@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>既読スルー・プロット v1.10.14</title>
+  <title>既読スルー・プロット v2.0.0</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
@@ -55,7 +55,7 @@
         </h1>
       </div>
       <div class="flex items-center gap-2">
-        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v1.10.14</span>
+        <span class="text-[10px] bg-white/15 px-2 py-1 rounded-full font-black border border-white/20">v2.0.0</span>
         <div id="header-round-info" class="hidden bg-indigo-800/60 px-3 py-1 rounded-full text-xs font-bold border border-indigo-400/30">
           ROUND <span id="round-num" class="text-amber-300 text-sm">1</span> / <span id="round-total" class="text-amber-300 text-sm">4</span>
         </div>
@@ -81,7 +81,7 @@
           <p class="text-xs text-slate-500 mt-1 font-bold">ルームID対戦・ランダムマッチに対応しています。</p>
           <div class="mt-2 inline-flex items-center gap-2 bg-white border border-indigo-100 rounded-full px-3 py-1.5 shadow-sm">
             <span class="text-[10px] text-slate-400 font-bold">VERSION</span>
-            <span class="text-xs text-indigo-600 font-black">1.10.14</span>
+            <span class="text-xs text-indigo-600 font-black">2.0.0</span>
           </div>
         </div>
       </div>
@@ -94,11 +94,11 @@
       <div id="account-panel" class="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0">
-            <div class="text-[10px] text-slate-400 font-black">アカウント</div>
-            <div id="account-status" class="text-xs font-black text-slate-600 truncate">ゲスト（部屋作成・ID対戦はログイン不要／ランダム対戦はログインが必要）</div>
+            <div class="text-[10px] text-slate-400 font-black">プレイヤー情報</div>
+            <div id="account-status" class="text-xs font-black text-slate-600 truncate">匿名プレイヤーを準備しています…</div>
             <div id="account-rating" class="text-[10px] text-indigo-600 font-black mt-1 hidden">RATE <span>1500</span></div>
           </div>
-          <button id="btn-account" class="shrink-0 px-3 py-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl text-xs font-black hover:bg-indigo-100">ログイン</button>
+          <span id="btn-account" class="shrink-0 px-3 py-2 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-xl text-xs font-black">匿名ID</span>
         </div>
       </div>
 
@@ -126,8 +126,8 @@
         </button>
         <p class="text-[11px] text-slate-500 font-bold text-center mt-2">
           <i class="fa-solid fa-circle-info mr-1 text-indigo-400"></i>
-          <strong class="text-indigo-600">部屋を作る・IDで参加するだけならログイン不要です。</strong>
-          ゲストのまま利用できます。
+          <strong class="text-indigo-600">登録・ログイン不要。</strong>
+          匿名IDで部屋対戦もランダム対戦も利用できます.
         </p>
       </div>
 
@@ -187,7 +187,7 @@
       <div class="text-center mb-5 pt-4">
         <div class="flex items-center justify-center gap-2 mb-1">
           <h2 class="text-lg font-extrabold text-indigo-700">待機室</h2>
-          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v1.10.14</span>
+          <span class="text-[10px] bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full font-black">v2.0.0</span>
         </div>
         <div class="bg-white border-2 border-slate-200 rounded-2xl p-4 shadow-sm inline-block min-w-[200px]">
           <p class="text-xs text-slate-400 font-bold mb-1">ルームIDを共有しよう</p>
@@ -347,46 +347,13 @@
 
   </div>
 
-  <!-- アカウントログインモーダル -->
-  <div id="account-modal" class="fixed inset-0 bg-slate-900/60 z-[70] hidden items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h2 class="text-xl font-black text-indigo-700">アカウント</h2>
-          <p class="text-[10px] text-slate-400 font-bold mt-1">ランダム対戦のレートを保存するために必要です。</p>
-        </div>
-        <button id="btn-close-account" class="w-9 h-9 rounded-full bg-slate-100 text-slate-500 font-black">✕</button>
-      </div>
-      <div id="account-form" class="space-y-3">
-        <input id="account-id" type="text" autocomplete="username" maxlength="20" placeholder="ユーザーID（3～20文字）" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold focus:border-indigo-400 focus:outline-none">
-        <div>
-          <input id="account-email" type="email" autocomplete="email" placeholder="メールアドレス（任意・ID/パスワード復旧用）" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold focus:border-indigo-400 focus:outline-none">
-          <p class="text-[10px] text-slate-400 mt-1 px-1 leading-relaxed">メールアドレスは任意です。未登録の場合、IDやパスワードを忘れた際の復旧はできません。</p>
-        </div>
-        <input id="account-password" type="password" autocomplete="current-password" placeholder="パスワード（6文字以上）" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold focus:border-indigo-400 focus:outline-none">
-        <div id="account-error" class="hidden text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-3 whitespace-pre-line"></div>
-        <button id="btn-login" class="w-full py-3.5 bg-indigo-600 text-white rounded-2xl font-black">ログイン</button>
-        <button id="btn-register" class="w-full py-3.5 bg-white text-indigo-700 border-2 border-indigo-100 rounded-2xl font-black">新規登録</button>
-        <div class="grid grid-cols-2 gap-2">
-          <button id="btn-forgot-id" class="py-2.5 bg-slate-50 text-slate-600 border border-slate-200 rounded-xl text-xs font-black">IDを忘れた</button>
-          <button id="btn-forgot-password" class="py-2.5 bg-slate-50 text-slate-600 border border-slate-200 rounded-xl text-xs font-black">パスワードを忘れた</button>
-        </div>
-        <p class="text-[10px] text-slate-400 leading-relaxed">※ログインは「ID＋パスワード」です。メールアドレスは任意で、登録した場合のみID・パスワード復旧に利用できます。</p>
-      </div>
-      <div id="account-logged-in" class="hidden space-y-3">
-        <div class="bg-indigo-50 rounded-2xl p-3 text-xs font-bold text-indigo-700 whitespace-pre-line" id="account-logged-in-text"></div>
-        <button id="btn-logout" class="w-full py-3.5 bg-white text-rose-600 border-2 border-rose-100 rounded-2xl font-black">ログアウト</button>
-      </div>
-    </div>
-  </div>
-
   <!-- ルール説明モーダル -->
   <div id="rules-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[60] hidden items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-md w-full max-h-[88vh] overflow-hidden shadow-2xl border border-slate-100 flex flex-col">
       <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-indigo-50">
         <div>
           <h2 class="text-lg font-black text-indigo-700">ルール・特殊カード説明</h2>
-          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v1.10.14</p>
+          <p class="text-[10px] text-slate-500 font-bold mt-0.5">既読スルー・プロット v2.0.0</p>
         </div>
         <button id="btn-close-rules" class="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 font-black">✕</button>
       </div>
@@ -478,7 +445,7 @@
         <section>
           <h3 class="text-sm font-black text-emerald-700 mb-2">📊 レート戦</h3>
           <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-3 leading-relaxed text-xs space-y-2">
-            <p>・<strong>誰かと対戦</strong>からのランダムマッチングはレート戦です。ログインが必要です。</p>
+            <p>・<strong>誰かと対戦</strong>からのランダムマッチングはレート戦です。登録・ログインなしで参加できます。</p>
             <p>・初期レートは<strong>1500</strong>。基本のマッチング範囲は<strong>レート差200以内</strong>です。</p>
             <p>・2人戦は勝敗をもとにレートが増減します。4人戦は最終順位をもとに、各プレイヤー間の結果を計算して増減します。</p>
             <p>・レートは0未満にはなりません。</p>
@@ -486,11 +453,12 @@
           </div>
         </section>
         <section>
-          <h3 class="text-sm font-black text-violet-700 mb-2">🔐 アカウント</h3>
+          <h3 class="text-sm font-black text-violet-700 mb-2">🪪 匿名プレイヤー</h3>
           <div class="bg-violet-50 rounded-2xl border border-violet-100 p-3 leading-relaxed text-xs space-y-2">
-            <p>・ログインは<strong>ID＋パスワード</strong>です。</p>
-            <p>・メールアドレスは<strong>任意</strong>で、登録した場合のみID・パスワード復旧に利用できます。</p>
-            <p>・ログイン状態は端末に保存され、ページをリロードしても維持されます。</p>
+            <p>・登録・ログインは不要です。初回アクセス時に匿名IDを自動発行します。</p>
+            <p>・同じブラウザで匿名IDが維持されている間は、レートと戦績を継続して保存します。</p>
+            <p>・ブラウザのデータ消去や別端末への移行では、レート・戦績を引き継げない場合があります。</p>
+            <p>・既存アカウントのレート・戦績は新しい匿名IDへ移行しません。既存データは削除しません。</p>
           </div>
         </section>
       </div>
@@ -524,7 +492,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, setPersistence, browserLocalPersistence, signInAnonymously, onAuthStateChanged, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getAuth, setPersistence, browserLocalPersistence, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, getDoc, getDocs, updateDoc, onSnapshot, runTransaction, collection, query, where } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // ============================================================================
@@ -598,13 +566,12 @@
     const REVEAL_STEP_INTERVAL_MS = 700; // 旧版のテンポを参考に、カード公開間隔を約0.7秒に
     const REVEAL_RESULT_PAUSE_MS = 1000; // 最後のカード公開後、結果を表示するまで約1秒待つ
     const REVEAL_NEXT_TURN_PAUSE_MS = 1400; // 最後のカード公開を見届けてから次の手番へ
-    const GAME_VERSION = '1.10.14';
+    const GAME_VERSION = '2.0.0';
     const INITIAL_RATING = 1500;
     const RATING_MATCH_RANGE = 200;
     const RATING_K_2P = 32;
     const RATING_K_4P = 16;
     let currentProfile = null;
-    let accountModal = null;
     const MATCH_MODES = { random2: 2, random4: 4 };
     let matchmakingMode = null;
     let matchmakingHeartbeatTimer = null;
@@ -1072,35 +1039,25 @@
     }
 
     // --- Account UI ---
-    accountModal = document.getElementById('account-modal');
-    document.getElementById('btn-account')?.addEventListener('click', openAccountModal);
-    document.getElementById('btn-close-account')?.addEventListener('click', closeAccountModal);
-    document.getElementById('btn-register')?.addEventListener('click', () => handleIdAuth('register'));
-    document.getElementById('btn-login')?.addEventListener('click', () => handleIdAuth('login'));
-    document.getElementById('btn-forgot-id')?.addEventListener('click', handleForgotId);
-    document.getElementById('btn-forgot-password')?.addEventListener('click', handleForgotPassword);
-    document.getElementById('btn-logout')?.addEventListener('click', async () => {
-      try {
-        await markCurrentRoomDisconnectedOnExit();
-        await signOut(auth);
-        clearActiveRoomSession();
-        closeAccountModal();
-        await initAuth();
-      } catch (e) { alert('ログアウトに失敗しました。\n' + e.message); }
-    });
-    accountModal?.addEventListener('click', e => { if (e.target === accountModal) closeAccountModal(); });
+    // アカウント登録・ログインUIは廃止。匿名認証を自動で行う。
 
     // --- Auth Setup ---
+    const ANONYMOUS_ID_VERSION_KEY = 'kidoku-anonymous-id-v2.0.0';
     async function initAuth() {
       if (!isFirebaseReady) return;
       try {
         await setPersistence(auth, browserLocalPersistence);
-        if (auth.currentUser) return;
-        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
-        } else {
+        // 初回の匿名ID方式への切替時は旧IDを引き継がず、新しい匿名IDを発行する。
+        // 旧プロフィールや戦績データはFirestoreから削除しない。
+        let identityVersion = '';
+        try { identityVersion = localStorage.getItem(ANONYMOUS_ID_VERSION_KEY) || ''; } catch (_) {}
+        if (auth.currentUser && (!auth.currentUser.isAnonymous || identityVersion !== 'ready')) {
+          await signOut(auth);
+        }
+        if (!auth.currentUser) {
           await signInAnonymously(auth);
         }
+        try { localStorage.setItem(ANONYMOUS_ID_VERSION_KEY, 'ready'); } catch (_) {}
       } catch (error) {
         firebaseAuthError = error;
         console.error("匿名/初期認証エラー:", error);
@@ -1117,10 +1074,17 @@
     // （認証待ちのまま「部屋を作る」が永遠に押せない状態を防止）
     if (isFirebaseReady) {
       onAuthStateChanged(auth, async user => {
+        // 旧バージョンの永続ログイン状態は利用せず、匿名認証への切替完了を待つ。
+        if (user && !user.isAnonymous) {
+          currentUser = null;
+          currentProfile = null;
+          updateAccountUI();
+          return;
+        }
         currentUser = user;
         if (user) firebaseAuthError = null;
-        if (user && !user.isAnonymous) {
-          try { await ensureUserProfile(); } catch (e) { console.warn('プロフィール取得失敗:', e); }
+        if (user?.isAnonymous) {
+          try { await ensureUserProfile(); } catch (e) { console.warn('匿名プロフィール取得失敗:', e); }
         } else { currentProfile = null; }
         if (user) {
           void cleanupPreviousRoomSession();
@@ -1149,12 +1113,9 @@
       return doc(db, 'artifacts', appId, 'public', 'data', 'kidoku_users', uid);
     }
 
-    function isPermanentAccount() {
-      return !!(currentUser && !currentUser.isAnonymous);
-    }
-
+    // ログイン機能は廃止。Firebase匿名IDをプレイヤー識別子として利用する。
     async function ensureUserProfile() {
-      if (!isPermanentAccount()) return null;
+      if (!currentUser) return null;
       const ref = getUserProfileRef(currentUser.uid);
       const snap = await getDoc(ref);
       if (snap.exists()) {
@@ -1207,325 +1168,17 @@
       const ratingEl = document.getElementById('account-rating');
       const btn = document.getElementById('btn-account');
       if (!status || !btn) return;
-      if (isPermanentAccount()) {
+      if (currentUser) {
         const rating = Number(currentProfile?.rating || INITIAL_RATING);
-        status.textContent = currentProfile?.loginId ? `ID: ${currentProfile.loginId}` : 'ログイン中';
-        btn.textContent = 'アカウント';
+        status.textContent = firebaseAuthError
+          ? 'オンライン接続エラー'
+          : `匿名プレイヤー${currentProfile ? '・レート保存中' : '・プロフィール準備中'}`;
+        btn.textContent = '匿名ID';
         if (ratingEl) { ratingEl.classList.remove('hidden'); ratingEl.innerHTML = `RATE <span>${rating}</span> / ${ratingClass(rating)}`; }
       } else {
-        status.textContent = firebaseAuthError
-          ? 'オンライン接続エラー（ログインの問題ではありません）'
-          : 'ゲスト（部屋作成・ID対戦はログイン不要／ランダム対戦はログインが必要）';
-        btn.textContent = 'ログイン';
+        status.textContent = firebaseAuthError ? 'オンライン接続エラー' : '匿名IDを準備しています…';
+        btn.textContent = '匿名ID';
         if (ratingEl) ratingEl.classList.add('hidden');
-      }
-    }
-
-    function openAccountModal() {
-      accountModal?.classList.remove('hidden');
-      accountModal?.classList.add('flex');
-      const logged = document.getElementById('account-logged-in');
-      const form = document.getElementById('account-form');
-      const text = document.getElementById('account-logged-in-text');
-      if (isPermanentAccount()) {
-        form?.classList.add('hidden'); logged?.classList.remove('hidden');
-        if (text) text.textContent = `ID: ${currentProfile?.loginId || '---'}\nレート ${Number(currentProfile?.rating || INITIAL_RATING)} (${ratingClass(Number(currentProfile?.rating || INITIAL_RATING))})`;
-      } else {
-        form?.classList.remove('hidden'); logged?.classList.add('hidden');
-      }
-    }
-
-    function closeAccountModal() { accountModal?.classList.add('hidden'); accountModal?.classList.remove('flex'); }
-
-    function normalizeAccountId(value) {
-      return value.trim().toLowerCase();
-    }
-
-    function validateAccountId(id) {
-      return /^[a-z0-9_]{3,20}$/.test(id);
-    }
-
-    async function findUserById(id) {
-      const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'kidoku_users'), where('loginId', '==', id));
-      const snap = await getDocs(q);
-      if (snap.empty) return null;
-      return snap.docs[0].data();
-    }
-
-    async function handleIdAuth(mode) {
-      const idEl = document.getElementById('account-id');
-      const emailEl = document.getElementById('account-email');
-      const id = normalizeAccountId(idEl?.value || '');
-      const email = (emailEl?.value || '').trim().toLowerCase();
-      const password = document.getElementById('account-password').value;
-      const errEl = document.getElementById('account-error');
-      if (errEl) { errEl.classList.add('hidden'); errEl.textContent = ''; }
-
-      if (!validateAccountId(id)) {
-        if (errEl) { errEl.textContent = 'IDは半角英数字と _ のみ、3～20文字で入力してください。'; errEl.classList.remove('hidden'); }
-        return;
-      }
-      if (!password || password.length < 6) {
-        if (errEl) { errEl.textContent = 'パスワードは6文字以上で入力してください。'; errEl.classList.remove('hidden'); }
-        return;
-      }
-      try {
-        if (mode === 'register') {
-          const existing = await findUserById(id);
-          if (existing) throw { code: 'kidoku/id-already-in-use' };
-          // メールアドレスは任意。未入力の場合はFirebase Auth内部用の仮想メールアドレスを使用し、復旧用メールは保存しない。
-          const authEmail = email || `${id}@auth.kidoku-game.local`;
-          await createUserWithEmailAndPassword(auth, authEmail, password);
-          const profile = { uid: currentUser.uid, loginId: id, email: authEmail, recoveryEmail: email || '', rating: INITIAL_RATING, games: 0, wins: 0, losses: 0, draws: 0, createdAt: Date.now(), updatedAt: Date.now() };
-          await setDoc(getUserProfileRef(currentUser.uid), profile, { merge: true });
-          currentProfile = profile;
-        } else {
-          const profile = await findUserById(id);
-          if (!profile?.email) throw { code: 'auth/invalid-credential' };
-          await signInWithEmailAndPassword(auth, profile.email, password);
-          await ensureUserProfile();
-        }
-        updateAccountUI();
-        closeAccountModal();
-        alert(mode === 'login' ? 'ログインに成功しました！' : 'アカウント登録に成功しました！');
-      } catch (e) {
-        console.error('ID認証失敗:', e);
-        const messages = {
-          'kidoku/id-already-in-use': 'このユーザーIDはすでに使用されています。',
-          'auth/email-already-in-use': 'このメールアドレスはすでに登録されています。',
-          'auth/invalid-credential': 'ユーザーIDまたはパスワードが正しくありません。',
-          'auth/invalid-email': '登録メールアドレスの形式が正しくありません。',
-          'auth/weak-password': 'パスワードは6文字以上で設定してください。',
-          'auth/operation-not-allowed': 'Firebase側でメール/パスワード認証が有効になっていません。'
-        };
-        if (errEl) { errEl.textContent = messages[e.code] || `認証に失敗しました。\n${e.message || e}`; errEl.classList.remove('hidden'); }
-      }
-    }
-
-    async function handleForgotId() {
-      const email = (document.getElementById('account-email')?.value || '').trim().toLowerCase();
-      const errEl = document.getElementById('account-error');
-      if (!email) { if (errEl) { errEl.textContent = '登録時のメールアドレスを入力してください。'; errEl.classList.remove('hidden'); } return; }
-      try {
-        const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'kidoku_users'), where('recoveryEmail', '==', email));
-        const snap = await getDocs(q);
-        if (snap.empty) throw { code: 'kidoku/recovery-not-found' };
-        // Firebaseから送られるメール本文にIDを直接載せることはできないため、まずパスワード再設定メールを送信します。
-        // IDそのもののメール送信はCloud Functions等のバックエンド実装が必要です。
-        if (errEl) { errEl.textContent = '登録メールアドレスを確認しました。IDのメール送信機能は次段階でバックエンドを追加すると実装できます。'; errEl.classList.remove('hidden'); }
-      } catch (e) {
-        if (errEl) { errEl.textContent = 'そのメールアドレスに紐づくアカウントが見つかりません。'; errEl.classList.remove('hidden'); }
-      }
-    }
-
-    async function handleForgotPassword() {
-      const email = (document.getElementById('account-email')?.value || '').trim().toLowerCase();
-      const errEl = document.getElementById('account-error');
-      if (!email) { if (errEl) { errEl.textContent = '登録時に設定したメールアドレスを入力してください。'; errEl.classList.remove('hidden'); } return; }
-      try {
-        const q = query(collection(db, 'artifacts', appId, 'public', 'data', 'kidoku_users'), where('recoveryEmail', '==', email));
-        const snap = await getDocs(q);
-        if (snap.empty) throw { code: 'kidoku/recovery-not-found' };
-        const profile = snap.docs[0].data();
-        await sendPasswordResetEmail(auth, profile.email);
-        if (errEl) { errEl.textContent = 'パスワード再設定メールを送信しました。メールを確認してください。'; errEl.className = 'text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl p-3 whitespace-pre-line'; errEl.classList.remove('hidden'); }
-      } catch (e) {
-        console.error('パスワード再設定失敗:', e);
-        if (errEl) { errEl.textContent = 'パスワード再設定メールを送信できませんでした。登録メールアドレスを確認してください。'; errEl.className = 'text-xs font-bold text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-3 whitespace-pre-line'; errEl.classList.remove('hidden'); }
-      }
-    }
-
-    async function applyRatingForFinishedMatch(roomData) {
-      if (!roomData?.matchMode || !['random2','random4'].includes(roomData.matchMode) || roomData.ratingSettled) return;
-      const players = Array.isArray(roomData.players) ? roomData.players.filter(p => p.uid && !p.disconnected) : [];
-      if (players.length !== Number(roomData.playerCount)) return;
-      const refs = players.map(p => getUserProfileRef(p.uid));
-      await runTransaction(db, async transaction => {
-        const roomRef = getRoomRef(roomData.roomId);
-        const latestRoomSnap = await transaction.get(roomRef);
-        const latestRoom = latestRoomSnap.data();
-        if (!latestRoom || latestRoom.ratingSettled) return;
-        const profileSnaps = [];
-        for (const ref of refs) profileSnaps.push(await transaction.get(ref));
-        const profiles = players.map((p, i) => ({
-          ...p,
-          rating: Number(profileSnaps[i].exists() ? (profileSnaps[i].data().rating ?? INITIAL_RATING) : INITIAL_RATING)
-        }));
-        const sorted = [...profiles].sort((a,b) => Number(b.score || 0) - Number(a.score || 0));
-        let lastScore = null, rank = 0;
-        sorted.forEach((p, i) => {
-          if (lastScore === null || Number(p.score || 0) < lastScore) rank = i + 1;
-          p.rank = rank; lastScore = Number(p.score || 0);
-        });
-        const deltas = profiles.length === 2
-          ? { [profiles[0].uid]: calcTwoPlayerRatingDelta(profiles[0].rating, profiles[1].rating, profiles[0].rank === profiles[1].rank ? 0.5 : (profiles[0].rank === 1 ? 1 : 0)), [profiles[1].uid]: 0 }
-          : calcMultiRatingDeltas(profiles);
-        if (profiles.length === 2) deltas[profiles[1].uid] = -deltas[profiles[0].uid];
-        const resultByUid = {};
-        profiles.forEach(p => {
-          const result = p.rank === 1 && profiles.filter(x => x.rank === 1).length === 1 ? 'WIN' : (p.rank === profiles.length ? 'LOSS' : (p.rank === 1 ? 'DRAW' : 'MID'));
-          resultByUid[p.uid] = result;
-          const oldProfile = profiles.find(x => x.uid === p.uid);
-          const base = profileSnaps[profiles.indexOf(p)].exists() ? profileSnaps[profiles.indexOf(p)].data() : {};
-          const nextRating = Math.max(0, Math.round(Number(oldProfile.rating || INITIAL_RATING) + Number(deltas[p.uid] || 0)));
-          transaction.set(refs[profiles.indexOf(p)], {
-            uid: p.uid, email: base.email || '', lastRatedRoomId: roomData.roomId, rating: nextRating, games: Number(base.games || 0) + 1,
-            wins: Number(base.wins || 0) + (result === 'WIN' ? 1 : 0), losses: Number(base.losses || 0) + (result === 'LOSS' ? 1 : 0),
-            draws: Number(base.draws || 0) + (result === 'DRAW' ? 1 : 0), updatedAt: Date.now(), createdAt: base.createdAt || Date.now()
-          }, { merge: true });
-        });
-        transaction.update(roomRef, { ratingSettled: true, ratingDeltas: deltas });
-      });
-    }
-
-
-    function switchScreen(screenId) {
-      ['screen-lobby', 'screen-matchmaking', 'screen-waiting', 'screen-game'].forEach(id => {
-        document.getElementById(id).classList.add('hidden');
-      });
-      document.getElementById(screenId).classList.remove('hidden');
-      
-      if (screenId === 'screen-game') {
-        document.getElementById('header-round-info').classList.remove('hidden');
-        document.getElementById('footer-action').classList.remove('hidden');
-      } else {
-        document.getElementById('header-round-info').classList.add('hidden');
-        document.getElementById('footer-action').classList.add('hidden');
-      }
-    }
-
-    // --- ボタンのローディング状態切り替え ---
-    function setBtnLoading(btnId, isLoading) {
-      const btn = document.getElementById(btnId);
-      if (!btn) return;
-      const text = document.getElementById(`text-${btnId.replace('btn-', '')}`);
-      const spinner = document.getElementById(`spinner-${btnId.replace('btn-', '')}`);
-      const icon = document.getElementById(`icon-${btnId.replace('btn-', '')}`);
-      
-      if (isLoading) {
-        btn.disabled = true;
-        if (spinner) spinner.classList.remove('hidden');
-        if (icon) icon.classList.add('hidden');
-      } else {
-        btn.disabled = false;
-        if (spinner) spinner.classList.add('hidden');
-        if (icon) icon.classList.remove('hidden');
-      }
-    }
-
-    // --- ルール説明 ---
-    const rulesModal = document.getElementById('rules-modal');
-    const openRulesButton = document.getElementById('btn-show-rules');
-    const closeRulesButton = document.getElementById('btn-close-rules');
-    const closeRulesBottomButton = document.getElementById('btn-close-rules-bottom');
-
-    function openRulesModal() {
-      if (!rulesModal) return;
-      rulesModal.classList.remove('hidden');
-      rulesModal.classList.add('flex');
-    }
-
-    function closeRulesModal() {
-      if (!rulesModal) return;
-      rulesModal.classList.add('hidden');
-      rulesModal.classList.remove('flex');
-    }
-
-    openRulesButton?.addEventListener('click', openRulesModal);
-    closeRulesButton?.addEventListener('click', closeRulesModal);
-    closeRulesBottomButton?.addEventListener('click', closeRulesModal);
-    rulesModal?.addEventListener('click', (event) => {
-      if (event.target === rulesModal) closeRulesModal();
-    });
-
-    // --- Random Matchmaking (v1.9.1: unified shared-pool engine) ---
-    // 2人/4人をそれぞれ独立した待機プールで管理します。
-    // 個別 players/{uid} キュー文書は使わず、待機プールとランダム対戦ルームだけで状態を管理します。
-
-    function getMatchmakingPoolRef(mode) {
-      return doc(db, 'artifacts', appId, 'public', 'data', 'kidoku_matchmaking', mode);
-    }
-
-    function getMatchmakingRoomsQuery(mode) {
-      return query(collection(db, 'artifacts', appId, 'public', 'data', 'kidoku_rooms'), where('matchMode', '==', mode));
-    }
-
-    function getLiveRandomRoomPlayers(room, now = Date.now()) {
-      if (!room || (room.status !== 'WAITING' && room.status !== 'PLAYING')) return [];
-      return Array.isArray(room.players)
-        ? room.players.filter(p => {
-            if (!p || !p.uid || p.disconnected) return false;
-            const lastSeen = Number(p.lastSeen || 0);
-            return lastSeen > 0 && now - lastSeen <= DISCONNECT_TIMEOUT_MS;
-          })
-        : [];
-    }
-
-    function getCleanWaitingList(data, now = Date.now()) {
-      const source = Array.isArray(data?.waiting) ? data.waiting : [];
-      const result = [];
-      const seen = new Set();
-      for (const p of source) {
-        if (!p || !p.uid || seen.has(p.uid)) continue;
-        const lastSeen = Number(p.lastSeen || 0);
-        const status = p.status || 'WAITING';
-        if (status !== 'WAITING' || lastSeen <= 0 || now - lastSeen > DISCONNECT_TIMEOUT_MS) continue;
-        seen.add(p.uid);
-        result.push({ ...p, status: 'WAITING' });
-      }
-      return result;
-    }
-
-    function refreshMatchmakingCountUI(mode) {
-      const count = (matchmakingWaitingCounts[mode] || 0) + (matchmakingRoomCounts[mode] || 0);
-      const n = MATCH_MODES[mode];
-      const top = document.getElementById(`match-count-${n}`);
-      if (top) top.innerText = `${count}人が待機・対戦中`;
-      if (matchmakingMode === mode) {
-        const current = document.getElementById('matchmaking-count');
-        if (current) current.innerText = `${count}人`;
-      }
-    }
-
-    function startMatchmakingLobbyListeners() {
-      if (!isFirebaseReady) return;
-      matchmakingPoolUnsubscribes.forEach(fn => fn && fn());
-      matchmakingPoolUnsubscribes = [];
-
-      Object.keys(MATCH_MODES).forEach(mode => {
-        const poolUnsub = onSnapshot(getMatchmakingPoolRef(mode), snap => {
-          const data = snap.exists() ? snap.data() : {};
-          const now = Date.now();
-          const waiting = getCleanWaitingList(data, now);
-          matchmakingWaitingCounts[mode] = new Set(waiting.map(p => p.uid)).size;
-          refreshMatchmakingCountUI(mode);
-          if (waiting.length >= MATCH_MODES[mode]) {
-            void attemptMatch(mode);
-          }
-        }, err => console.warn(`マッチング待機人数の取得失敗(${mode}):`, err));
-
-        const roomsUnsub = onSnapshot(getMatchmakingRoomsQuery(mode), snap => {
-          const now = Date.now();
-          let count = 0;
-          snap.forEach(roomSnap => {
-            count += getLiveRandomRoomPlayers(roomSnap.data(), now).length;
-          });
-          matchmakingRoomCounts[mode] = count;
-          refreshMatchmakingCountUI(mode);
-        }, err => console.warn(`マッチング対戦人数の取得失敗(${mode}):`, err));
-
-        matchmakingPoolUnsubscribes.push(poolUnsub, roomsUnsub);
-      });
-    }
-
-    function stopMatchmakingTimers() {
-      if (matchmakingHeartbeatTimer) {
-        clearInterval(matchmakingHeartbeatTimer);
-        matchmakingHeartbeatTimer = null;
-      }
-      if (matchmakingRoomDiscoveryUnsubscribe) {
-        matchmakingRoomDiscoveryUnsubscribe();
-        matchmakingRoomDiscoveryUnsubscribe = null;
       }
     }
 
@@ -1575,14 +1228,9 @@
         if (firebaseAuthError || !isFirebaseReady) {
           showRoomActionError('ランダム対戦を開始できません。', firebaseAuthError || { code: 'online-unavailable' });
         } else {
-          alert('ランダム対戦はIDログインが必要です。現在はゲスト状態です。');
+          alert('匿名プレイヤーを準備しています。少し待ってからもう一度お試しください。');
           openAccountModal();
         }
-        return;
-      }
-      if (!isPermanentAccount()) {
-        openAccountModal();
-        alert('ランダム対戦はログインが必要です。ログイン後にもう一度選択してください。');
         return;
       }
       if (!MATCH_MODES[mode]) return;
@@ -1601,7 +1249,7 @@
       try {
         const now = Date.now();
         const profile = currentProfile || await ensureUserProfile();
-        const myRating = Number(profile?.rating || INITIAL_RATING);
+        const myRating = Number(profile?.rating ?? INITIAL_RATING);
 
         await runTransaction(db, async transaction => {
           const snap = await transaction.get(poolRef);
@@ -1743,6 +1391,7 @@
             skipNextPlayer: false,
             disableNextPlayer: false,
             lastNumericValue: 0,
+            lastValidPlayerIndex: -1,
             phase: 'PLOT',
             roundTurnOrder: displayOrder.filter(id => !players[id]?.disconnected),
             plotDeadline: now + CARD_SELECT_TIME_MS,
@@ -1863,7 +1512,7 @@
           roomId, matchMode: null, hostId: currentUser.uid, status: 'WAITING', round: 1, oyaIndex: 0,
           playerCount: 1, maxPlayers: 4, targetPoints: 10, roundLimit: 4, baseTargetScore: 10, fieldScore: 0, targetScore: 10, rewardPt: 1, kidokuActivated: false,
           specialCardsEnabled: true, specialCardMode: 'kidoku',
-          skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
+          skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, lastValidPlayerIndex: -1, phase: 'PLOT',
           logs: [],
           displayOrder: [0],
           players: [{ id: 0, uid: currentUser.uid, name: playerName, score: 0, hand: [], passRights: false, plottedCard: null, plottedCardTemp: null, lastSeen: Date.now(), sessionId: PAGE_SESSION_ID, disconnected: false }]
@@ -2270,7 +1919,7 @@
                   players, playerCount, targetPoints, baseTargetScore: targetPoints, roundLimit,
                   oyaIndex, displayOrder, status: 'PLAYING', fieldScore: 0, targetScore: targetPoints,
                   rewardPt: 1, kidokuActivated: false, kidokuExtensionPending: false,
-                  skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, phase: 'PLOT',
+                  skipNextPlayer: false, disableNextPlayer: false, lastNumericValue: 0, lastValidPlayerIndex: -1, phase: 'PLOT',
                   roundTurnOrder: displayOrder.filter(id => !players[id]?.disconnected),
                   plotDeadline: latest.matchMode ? Date.now() + CARD_SELECT_TIME_MS : null, plotTimeoutHandledAt: null, logs: nextLogs
                 });
@@ -2308,6 +1957,7 @@
       gameState.skipNextPlayer = false;
       gameState.disableNextPlayer = false;
       gameState.lastNumericValue = 0;
+      gameState.lastValidPlayerIndex = -1;
       gameState.phase = 'PLOT';
       gameState.roundTurnOrder = getTurnOrder(gameState);
       isHostProcessingReveal = false;
@@ -2907,6 +2557,9 @@
           // 未提出なら切断直後などの安全策としてPASS扱い。
           const actualCard = p.plottedCardTemp || 'PASS';
           p.plottedCard = actualCard;
+          if (step === 0) latest.lastValidPlayerIndex = -1;
+          const lastValidBeforeThisStep = Number.isInteger(latest.lastValidPlayerIndex) ? latest.lastValidPlayerIndex : -1;
+          const blockedThisStep = actualCard !== 'PASS' && !!latest.skipNextPlayer;
 
           if (actualCard === 'PASS') {
             logs.push(`⏩ <strong class="text-emerald-400">${p.name}</strong> はパスしました。`);
@@ -2914,6 +2567,7 @@
             logs.push(`🚫 <strong class="text-slate-300">${p.name}</strong> はブロックされているためスキップ！`);
             latest.skipNextPlayer = false;
           } else if (latest.disableNextPlayer) {
+            latest.lastNumericValue = 0;
             logs.push(`🔕 <strong class="text-amber-300">${p.name}</strong> のカード [${actualCard}] は「通知オフ」で無効化！(+0)`);
             latest.disableNextPlayer = false;
           } else {
@@ -2923,9 +2577,11 @@
               latest.lastNumericValue = val;
               logs.push(`➕ <strong>${p.name}</strong> が [${actualCard}] を開いた (合計: <strong class="text-cyan-300">${latest.fieldScore}</strong>)`);
             } else if (actualCard === '未読スルー') {
+              latest.lastNumericValue = 0;
               p.passRights = true;
               logs.push(`🛋️ <strong>${p.name}</strong> が [未読スルー] を発動！次回パス権を獲得。`);
             } else if (actualCard === '既読スルー') {
+              latest.lastNumericValue = 0;
               if (pIdx === latest.oyaIndex) {
                 latest.kidokuActivated = true;
                 logs.push(`👀 <strong>${p.name}</strong> (親) が [既読スルー] を宣言！${latest.baseTargetScore}pt到達で延長＆高得点！`);
@@ -2933,6 +2589,7 @@
                 logs.push(`👀 <strong>${p.name}</strong> が [既読スルー] を出したが親ではないため無効 (+0)`);
               }
             } else if (actualCard === '通知オフ') {
+              latest.lastNumericValue = 0;
               if (step < turnOrder.length - 1) latest.disableNextPlayer = true;
               logs.push(`🚫 <strong>${p.name}</strong> が [通知オフ] を使用！次の人を無効化。`);
             } else if (actualCard === '送信取消') {
@@ -2944,11 +2601,15 @@
               } else {
                 logs.push(`↩️ <strong>${p.name}</strong> が [送信取消] を使用したが、引き戻し失敗。`);
               }
+              latest.lastNumericValue = 0;
             } else if (actualCard === 'ブロック') {
+              latest.lastNumericValue = 0;
               if (step < turnOrder.length - 1) latest.skipNextPlayer = true;
               logs.push(`🧱 <strong>${p.name}</strong> が [ブロック] を使用！次の人を強制お休み。`);
             }
           }
+
+          if (actualCard !== 'PASS' && !blockedThisStep) latest.lastValidPlayerIndex = pIdx;
 
           // 数字カードを出したプレイヤーは山から1枚補充。
           if (['+1', '+2', '+3'].includes(actualCard)) {
@@ -2981,9 +2642,8 @@
             logs.push(`🎯 <strong class="text-emerald-400">${p.name}</strong> がピッタリ ${targetScore}pt 達成！ <strong>+${rewardPt}pt</strong>`);
             roundFinished = true;
           } else if (latest.fieldScore > targetScore) {
-            const prevStep = (step - 1 + turnOrder.length) % turnOrder.length;
-            const prevPIdx = turnOrder[prevStep];
-            const prevP = players[prevPIdx];
+            const prevPIdx = lastValidBeforeThisStep;
+            const prevP = prevPIdx >= 0 ? players[prevPIdx] : null;
             if (prevP) {
               prevP.score = Number(prevP.score || 0) + rewardPt;
               logs.push(`💥 <strong class="text-rose-400">${p.name}</strong> がスベった！ (${latest.fieldScore}pt) 一つ前の <strong class="text-indigo-300">${prevP.name}</strong> に <strong>+${rewardPt}pt</strong>！`);
@@ -3006,6 +2666,7 @@
               skipNextPlayer: !!latest.skipNextPlayer,
               disableNextPlayer: !!latest.disableNextPlayer,
               lastNumericValue: Number(latest.lastNumericValue || 0),
+              lastValidPlayerIndex: Number.isInteger(latest.lastValidPlayerIndex) ? latest.lastValidPlayerIndex : -1,
               logs,
               phase: 'REVEAL_WAIT_RESULT',
               revealWaitUntil: Date.now() + REVEAL_RESULT_PAUSE_MS
@@ -3028,6 +2689,7 @@
               skipNextPlayer: !!latest.skipNextPlayer,
               disableNextPlayer: !!latest.disableNextPlayer,
               lastNumericValue: Number(latest.lastNumericValue || 0),
+              lastValidPlayerIndex: Number.isInteger(latest.lastValidPlayerIndex) ? latest.lastValidPlayerIndex : -1,
               logs,
               phase: nextPhase
             });
@@ -3060,6 +2722,7 @@
                 skipNextPlayer: !!latest.skipNextPlayer,
                 disableNextPlayer: !!latest.disableNextPlayer,
                 lastNumericValue: Number(latest.lastNumericValue || 0),
+                lastValidPlayerIndex: Number.isInteger(latest.lastValidPlayerIndex) ? latest.lastValidPlayerIndex : -1,
                 phase: nextPhase,
                 revealWaitUntil: Date.now() + REVEAL_RESULT_PAUSE_MS,
                 logs
@@ -3079,6 +2742,7 @@
                 skipNextPlayer: !!latest.skipNextPlayer,
                 disableNextPlayer: !!latest.disableNextPlayer,
                 lastNumericValue: Number(latest.lastNumericValue || 0),
+                lastValidPlayerIndex: Number.isInteger(latest.lastValidPlayerIndex) ? latest.lastValidPlayerIndex : -1,
                 phase: nextPhase,
                 revealWaitUntil: Date.now() + REVEAL_NEXT_TURN_PAUSE_MS,
                 logs
@@ -3151,7 +2815,7 @@
       const players = [{id:0,uid:humanUid,name:names,score:0,hand:getInitialHand('all'),passRights:false,plottedCard:null,plottedCardTemp:null,disconnected:false}];
       personalities.forEach((personality,i)=>players.push({id:i+1,uid:`cpu-${personality.id}`,name:`CPU${i+1}`,cpuType:personality.id,score:0,hand:getInitialHand('all'),passRights:false,plottedCard:null,plottedCardTemp:null,disconnected:false}));
       const oyaIndex = Math.floor(Math.random()*count);
-      gameState = {roomId:'CPU_LOCAL',status:'PLAYING',phase:'PLOT',round:1,roundLimit:getRoundLimit(count),playerCount:count,players,hostId:humanUid,oyaIndex,displayOrder:[oyaIndex,...players.map(p=>p.id).filter(id=>id!==oyaIndex)],roundTurnOrder:[oyaIndex,...players.map(p=>p.id).filter(id=>id!==oyaIndex)],fieldScore:0,targetScore:getBaseTargetScore(count),baseTargetScore:getBaseTargetScore(count),targetPoints:getBaseTargetScore(count),rewardPt:1,kidokuActivated:false,kidokuExtensionPending:false,skipNextPlayer:false,disableNextPlayer:false,lastNumericValue:0,plotDeadline:null,plotTimeoutHandledAt:null,logs:[`🤖 CPU対戦を開始しました（${count}人戦）。CPUの思考タイプは毎回ランダムに選ばれます。`]};
+      gameState = {roomId:'CPU_LOCAL',status:'PLAYING',phase:'PLOT',round:1,roundLimit:getRoundLimit(count),playerCount:count,players,hostId:humanUid,oyaIndex,displayOrder:[oyaIndex,...players.map(p=>p.id).filter(id=>id!==oyaIndex)],roundTurnOrder:[oyaIndex,...players.map(p=>p.id).filter(id=>id!==oyaIndex)],fieldScore:0,targetScore:getBaseTargetScore(count),baseTargetScore:getBaseTargetScore(count),targetPoints:getBaseTargetScore(count),rewardPt:1,kidokuActivated:false,kidokuExtensionPending:false,skipNextPlayer:false,disableNextPlayer:false,lastNumericValue:0,lastValidPlayerIndex:-1,plotDeadline:null,plotTimeoutHandledAt:null,logs:[`🤖 CPU対戦を開始しました（${count}人戦）。CPUの思考タイプは毎回ランダムに選ばれます。`]};
       players.forEach(p=>{ if(p.id!==0) p.hand=getInitialHand('all'); });
       gameState.logs.push(`--- 🔔 第 1 ラウンド開始 (親: ${players[oyaIndex].name} / ${count}人戦・目標${gameState.targetScore}pt・全${gameState.roundLimit}R) ---`);
       selectedHandIndex=null; isUIInitialized=false; cpuDiagSetVisible(true); cpuDiagLog('CPU_GAME_STARTED', { count, hostId: humanUid, oyaIndex }); updateGameUI();
@@ -3194,23 +2858,27 @@
       const pIdx=order[step], p=gameState.players[pIdx];
       if (!p) { cpuDiagLog('REVEAL_PLAYER_MISSING', { step, pIdx, order }); finishCpuTurn(); return; }
       const card=p.plottedCardTemp || 'PASS';
+      if (step === 0) gameState.lastValidPlayerIndex = -1;
+      const lastValidBeforeThisStep = Number.isInteger(gameState.lastValidPlayerIndex) ? gameState.lastValidPlayerIndex : -1;
+      const blockedThisStep = card !== 'PASS' && !!gameState.skipNextPlayer;
       cpuDiagLog('REVEAL_CARD_BEFORE', { step, pIdx, playerName:p.name, plottedCard:p.plottedCard, plottedCardTemp:p.plottedCardTemp, resolvedCard:card });
       p.plottedCard=card;
       if (card==='PASS') gameState.logs.push(`⏩ <strong>${p.name}</strong> はパスしました。`);
       else if (gameState.skipNextPlayer) { gameState.logs.push(`🚫 <strong>${p.name}</strong> はブロックされているためスキップ！`); gameState.skipNextPlayer=false; }
-      else if (gameState.disableNextPlayer) { gameState.logs.push(`🔕 <strong>${p.name}</strong> のカード [${card}] は「通知オフ」で無効化！(+0)`); gameState.disableNextPlayer=false; }
+      else if (gameState.disableNextPlayer) { gameState.lastNumericValue=0; gameState.logs.push(`🔕 <strong>${p.name}</strong> のカード [${card}] は「通知オフ」で無効化！(+0)`); gameState.disableNextPlayer=false; }
       else if (['+1','+2','+3'].includes(card)) { const n=Number(card.slice(1)); gameState.fieldScore+=n; gameState.lastNumericValue=n; gameState.logs.push(`➕ <strong>${p.name}</strong> が [${card}] を開いた (合計: <strong>${gameState.fieldScore}</strong>)`); }
-      else if (card==='未読スルー') { p.passRights=true; gameState.logs.push(`🛋️ <strong>${p.name}</strong> が [未読スルー] を発動！次回パス権を獲得。`); }
-      else if (card==='既読スルー') { if(pIdx===gameState.oyaIndex){gameState.kidokuActivated=true;gameState.logs.push(`👀 <strong>${p.name}</strong> (親) が [既読スルー] を宣言！${gameState.baseTargetScore}pt到達で延長＆高得点！`);}else gameState.logs.push(`👀 <strong>${p.name}</strong> が [既読スルー] を出したが親ではないため無効 (+0)`); }
-      else if (card==='通知オフ') { if(step<order.length-1) gameState.disableNextPlayer=true; gameState.logs.push(`🚫 <strong>${p.name}</strong> が [通知オフ] を使用！次の人を無効化。`); }
-      else if (card==='送信取消') { if(step>0 && gameState.lastNumericValue>0){gameState.fieldScore=Math.max(0,gameState.fieldScore-gameState.lastNumericValue);gameState.logs.push(`↩️ <strong>${p.name}</strong> が [送信取消] を使用！直前の数字を引き戻した (合計: <strong>${gameState.fieldScore}</strong>)`);gameState.lastNumericValue=0;}else gameState.logs.push(`↩️ <strong>${p.name}</strong> が [送信取消] を使用したが、引き戻し失敗。`); }
-      else if (card==='ブロック') { if(step<order.length-1) gameState.skipNextPlayer=true; gameState.logs.push(`🧱 <strong>${p.name}</strong> が [ブロック] を使用！次の人を強制お休み。`); }
+      else if (card==='未読スルー') { gameState.lastNumericValue=0; p.passRights=true; gameState.logs.push(`🛋️ <strong>${p.name}</strong> が [未読スルー] を発動！次回パス権を獲得。`); }
+      else if (card==='既読スルー') { gameState.lastNumericValue=0; if(pIdx===gameState.oyaIndex){gameState.kidokuActivated=true;gameState.logs.push(`👀 <strong>${p.name}</strong> (親) が [既読スルー] を宣言！${gameState.baseTargetScore}pt到達で延長＆高得点！`);}else gameState.logs.push(`👀 <strong>${p.name}</strong> が [既読スルー] を出したが親ではないため無効 (+0)`); }
+      else if (card==='通知オフ') { gameState.lastNumericValue=0; if(step<order.length-1) gameState.disableNextPlayer=true; gameState.logs.push(`🚫 <strong>${p.name}</strong> が [通知オフ] を使用！次の人を無効化。`); }
+      else if (card==='送信取消') { if(step>0 && gameState.lastNumericValue>0){gameState.fieldScore=Math.max(0,gameState.fieldScore-gameState.lastNumericValue);gameState.logs.push(`↩️ <strong>${p.name}</strong> が [送信取消] を使用！直前の数字を引き戻した (合計: <strong>${gameState.fieldScore}</strong>)`);}else gameState.logs.push(`↩️ <strong>${p.name}</strong> が [送信取消] を使用したが、引き戻し失敗。`); gameState.lastNumericValue=0; }
+      else if (card==='ブロック') { gameState.lastNumericValue=0; if(step<order.length-1) gameState.skipNextPlayer=true; gameState.logs.push(`🧱 <strong>${p.name}</strong> が [ブロック] を使用！次の人を強制お休み。`); }
+      if (card !== 'PASS' && !blockedThisStep) gameState.lastValidPlayerIndex = pIdx;
       if(['+1','+2','+3'].includes(card)) p.hand.push(['+1','+2','+3'][Math.floor(Math.random()*3)]);
       const base=gameState.baseTargetScore;
       if(gameState.kidokuActivated && gameState.fieldScore>=base && gameState.targetScore===base){gameState.players[gameState.oyaIndex].score++;gameState.targetScore=base*2;gameState.rewardPt=2;gameState.logs.push(`🔥 【既読スルー成功！】親に1pt！ゴール${base*2}ptへ！延長戦です。`);}
       let finished=false;
       if(gameState.fieldScore===gameState.targetScore){p.score+=gameState.rewardPt;gameState.logs.push(`🎯 <strong>${p.name}</strong> がピッタリ ${gameState.targetScore}pt 達成！ <strong>+${gameState.rewardPt}pt</strong>`);finished=true;}
-      else if(gameState.fieldScore>gameState.targetScore){const prev=gameState.players[order[(step-1+order.length)%order.length]];if(prev){prev.score+=gameState.rewardPt;gameState.logs.push(`💥 <strong>${p.name}</strong> がスベった！一つ前の <strong>${prev.name}</strong> に +${gameState.rewardPt}pt！`);}finished=true;}
+      else if(gameState.fieldScore>gameState.targetScore){const prevIdx=lastValidBeforeThisStep;const prev=prevIdx>=0?gameState.players[prevIdx]:null;if(prev){prev.score+=gameState.rewardPt;gameState.logs.push(`💥 <strong>${p.name}</strong> がスベった！一つ前の <strong>${prev.name}</strong> に +${gameState.rewardPt}pt！`);}finished=true;}
       cpuDiagLog('REVEAL_CARD_RESOLVED', { step, pIdx, card, finished, fieldScore:gameState.fieldScore, targetScore:gameState.targetScore });
       updateGameUI(); cpuDiagLog('REVEAL_UI_UPDATED', { step, phase:gameState.phase });
       if(finished){cpuDiagLog('ROUND_END_TIMER_SCHEDULED', { delayMs:REVEAL_RESULT_PAUSE_MS, step });cpuRevealTimer=setTimeout(()=>{try { cpuDiagLog('ROUND_END_TIMER_FIRED', { step }); gameState.phase='ROUND_END';isHostProcessingReveal=false;updateGameUI();cpuDiagLog('ROUND_END_UI_UPDATED'); } catch(e) { cpuDiagLog('ROUND_END_EXCEPTION', {message:e?.message,stack:e?.stack}); console.error('[CPU] round end exception',e); }},REVEAL_RESULT_PAUSE_MS);return;}
@@ -3328,7 +2996,7 @@
           return;
         }
         if (gameState.round >= roundLimit) {
-          if (gameState.matchMode && isPermanentAccount()) {
+          if (gameState.matchMode) {
             try {
               await applyRatingForFinishedMatch(gameState);
               const refreshed = await getDoc(getRoomRef(currentRoomId));
