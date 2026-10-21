@@ -1096,7 +1096,13 @@
         if (joinBtn) joinBtn.disabled = false;
       });
       initAuth();
-      startMatchmakingLobbyListeners();
+      // ロビー人数表示用リスナーは現在このビルドに未実装のため、
+      // 未定義関数の呼び出しで後続のゲーム操作イベント登録が止まらないようにする。
+      if (typeof startMatchmakingLobbyListeners === 'function') {
+        startMatchmakingLobbyListeners();
+      } else {
+        console.warn('ロビー人数表示リスナーは未設定です。対戦操作の初期化は続行します。');
+      }
     } else {
       // Firebase初期化に失敗しているため、作成/参加操作は押せるままにして原因を表示する。
       const createBtn = document.getElementById('btn-create-room');
@@ -1229,7 +1235,8 @@
           showRoomActionError('ランダム対戦を開始できません。', firebaseAuthError || { code: 'online-unavailable' });
         } else {
           alert('匿名プレイヤーを準備しています。少し待ってからもう一度お試しください。');
-          openAccountModal();
+          // アカウント登録UIは廃止済み。匿名認証の準備を待つ案内のみ表示する。
+          alert('匿名プレイヤーを準備しています。少し待ってからもう一度お試しください。');
         }
         return;
       }
